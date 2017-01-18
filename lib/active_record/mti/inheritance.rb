@@ -57,6 +57,8 @@ module ActiveRecord
         # Search descendants for one who's table_name is equal to the returned tableoid.
         # This indicates the class of the record
         def find_mti_class(record)
+          record['tableoid'].classify.constantize
+        rescue NameError => e
           descendants.find(Proc.new{ self }) { |d| d.table_name == record['tableoid'] }
         end
 
