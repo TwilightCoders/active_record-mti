@@ -42,12 +42,12 @@ module ActiveRecord
 
             tbl.print "  create_table #{remove_prefix_and_suffix(table).inspect}"
             if parent_table
-              tbl.print %Q(, inherits: "#{parent_table}")
+              tbl.print %Q(, inherits: '#{parent_table}')
             else
               pkcol = columns.detect { |c| c.name == pk }
               if pkcol
                 if pk != 'id'
-                  tbl.print %Q(, primary_key: "#{pk}")
+                  tbl.print %Q(, primary_key: '#{pk}')
                 elsif pkcol.sql_type == 'bigint'
                   tbl.print ", id: :bigserial"
                 elsif pkcol.sql_type == 'uuid'

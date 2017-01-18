@@ -22,11 +22,11 @@ module ActiveRecord
             if schema = options.delete(:schema)
               # If we specify a schema then we only create it if it doesn't exist
               # and we only force create it if only the specific schema is in the search path
-              table_name = "#{schema}.#{table_name}"
+              table_name = %Q("#{schema}"."#{table_name}")
             end
 
             if parent_table = options.delete(:inherits)
-              options[:options] = ["INHERITS (#{parent_table})", options[:options]].compact.join
+              options[:options] = [%Q(INHERITS ("#{parent_table}")), options[:options]].compact.join
             end
 
             td = create_table_definition table_name, options[:temporary], options[:options], options[:as]
@@ -58,7 +58,7 @@ module ActiveRecord
 
             if parent_table
               parent_table_primary_key = primary_key(parent_table)
-              execute "ALTER TABLE #{table_name} ADD PRIMARY KEY (#{parent_table_primary_key})"
+              execute %Q(ALTER TABLE "#{table_name}" ADD PRIMARY KEY ("#{parent_table_primary_key}"))
               indexes(parent_table).each do |index|
                 add_index table_name, index.columns, :unique => index.unique
               end
