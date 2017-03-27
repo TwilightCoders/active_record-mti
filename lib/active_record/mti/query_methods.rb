@@ -1,3 +1,4 @@
+require 'active_record'
 module ActiveRecord
   module MTI
     module QueryMethods
@@ -18,3 +19,5 @@ module ActiveRecord
     end
   end
 end
+
+::ActiveRecord::Relation.send :include, ActiveRecord::MTI::QueryMethods

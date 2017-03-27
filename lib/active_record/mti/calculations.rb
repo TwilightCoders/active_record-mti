@@ -121,3 +121,5 @@ module ActiveRecord
     end
   end
 end
+
+::ActiveRecord::Relation.send :include, ActiveRecord::MTI::Calculations

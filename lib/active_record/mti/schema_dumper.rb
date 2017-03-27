@@ -3,6 +3,9 @@
 # tables before we dump child tables (of course).
 # In addition we have to make sure we don't dump columns
 # that are inherited.
+require 'active_record'
+require 'active_support/concern'
+
 module ActiveRecord
   # = Active Record Schema Dumper
   #
@@ -175,3 +178,5 @@ module ActiveRecord
     end
   end
 end
+
+::ActiveRecord::SchemaDumper.send :include, ActiveRecord::MTI::SchemaDumper

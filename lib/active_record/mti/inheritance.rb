@@ -1,3 +1,6 @@
+require 'active_record'
+require 'active_support/concern'
+
 module ActiveRecord
   # == Multi table inheritance
   #
@@ -79,3 +82,5 @@ module ActiveRecord
     end
   end
 end
+
+::ActiveRecord::Base.send :include, ActiveRecord::MTI::Inheritance

@@ -1,3 +1,6 @@
+require 'active_record'
+require 'active_record/connection_adapters/postgresql_adapter'
+
 module ActiveRecord
   module MTI
     module ConnectionAdapters
@@ -94,3 +97,5 @@ module ActiveRecord
     end
   end
 end
+
+::ActiveRecord::ConnectionAdapters::PostgreSQLAdapter.send :include, ActiveRecord::MTI::ConnectionAdapters::PostgreSQL::SchemaStatements
