@@ -1,3 +1,5 @@
+require 'active_support/concern'
+
 # Modified SchemaDumper that knows how to dump
 # inherited tables. Key is that we have to dump parent
 # tables before we dump child tables (of course).
@@ -28,6 +30,7 @@ module ActiveRecord
         # schema in the search path (not including the $user schema)
         def table(table, stream)
           return if already_dumped?(table)
+
           if parent_table = @connection.parent_table(table)
             table(parent_table, stream)
             parent_column_names = @connection.columns(parent_table).map(&:name)
