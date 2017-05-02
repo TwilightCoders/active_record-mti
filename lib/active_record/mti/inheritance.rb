@@ -25,7 +25,17 @@ module ActiveRecord
     module Inheritance
       extend ActiveSupport::Concern
 
+      included do
+        scope :discern_inheritance, -> {
+
+        }
+      end
+
       module ClassMethods
+
+        def self.inherited(base)
+          puts "I WAS INHERITED #{base}"
+        end
 
         # We know we're using multi-table inheritance if the inheritance_column is not actually
         # present in the DB structure. Thereby implying the inheritance_column is inferred.
