@@ -11,7 +11,6 @@ describe ActiveRecord::MTI do
 
   it 'casts properly' do
     user = User.first
-
     expect(user.tableoid).to eq(User.table_name)
   end
 
@@ -24,7 +23,6 @@ describe ActiveRecord::MTI do
 
     it 'children' do
       admins = Admin.all
-
       expect(admins.count).to be(1)
     end
   end
