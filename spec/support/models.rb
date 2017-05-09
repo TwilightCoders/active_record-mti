@@ -14,7 +14,8 @@ class Post < ::ActiveRecord::Base
 end
 
 class User < ::ActiveRecord::Base
-  self.inheritance_column = 'tableoid'
+  uses_mti
+
   has_many :posts
   has_many :comments
 
@@ -22,6 +23,4 @@ end
 
 class Admin < User
   self.table_name = 'admins'
-
-
 end

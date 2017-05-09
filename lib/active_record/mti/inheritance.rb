@@ -33,22 +33,22 @@ module ActiveRecord
 
       module ClassMethods
 
-        def self.inherited(base)
-          puts "I WAS INHERITED #{base}"
+        def inherited(child)
+          child.uses_mti if self.uses_mti?
+          super
         end
 
-        # We know we're using multi-table inheritance if the inheritance_column is not actually
-        # present in the DB structure. Thereby implying the inheritance_column is inferred.
-        # To further isolate usage of multi-table inheritance, the inheritance column must be set
-        # to 'tableoid'
+        def uses_mti
+          self.inheritance_column = 'tableoid'
+          @uses_mti = true
+        end
+
         def using_multi_table_inheritance?(klass = self)
-          @using_multi_table_inheritance ||= if klass.columns_hash.include?(klass.inheritance_column)
-            false
-          elsif klass.inheritance_column == 'tableoid' && (klass.descendants.select{ |d| d.table_name != klass.table_name }.any?)
-            true
-          else
-            false
-          end
+          klass.uses_mti?
+        end
+
+        def uses_mti?
+          @uses_mti ||= false
         end
 
         private

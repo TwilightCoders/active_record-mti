@@ -19,15 +19,20 @@ describe ActiveRecord::MTI do
 
     it 'parents' do
       users = User.all
-      binding.pry
       expect(users.count).to be(2)
-
     end
 
     it 'children' do
       admins = Admin.all
 
       expect(admins.count).to be(1)
+    end
+  end
+
+  describe 'dynamic class creation' do
+    it 'infers the table_name from superclass not base_class' do
+      god = Class.new(Admin)
+      expect(god.table_name).to eql(Admin.table_name)
     end
   end
 

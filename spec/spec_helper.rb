@@ -4,8 +4,6 @@ require 'active_record/mti'
 
 ActiveRecord::MTI.load
 
-Dir[ActiveRecord::MTI.root.join('spec/support/**/*.rb')].each { |f| require f }
-
 db_config = {
   adapter: "postgresql", database: "active_record_mti_test"
 }
@@ -18,6 +16,10 @@ ActiveRecord::Base.connection.create_database(db_config[:database])
 ActiveRecord::Base.establish_connection db_config
 
 load File.dirname(__FILE__) + '/schema.rb'
+
+Dir[File.join(File.dirname(__FILE__), '..', 'spec', 'support', '**', '**.rb')].each do |f|
+  require f
+end
 
 RSpec.configure do |config|
   config.order = "random"
