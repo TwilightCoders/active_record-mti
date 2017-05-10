@@ -72,3 +72,5 @@
 Icon?
 ehthumbs.db
 Thumbs.db
+/Gemfile.lock
+/coverage
