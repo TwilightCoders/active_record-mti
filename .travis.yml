@@ -1,0 +1,4 @@
+rvm:
+  - 2.2.0
+gemfile:
+  - gemfiles/Gemfile.rails-edge
