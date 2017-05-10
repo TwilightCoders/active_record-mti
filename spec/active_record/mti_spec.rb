@@ -14,8 +14,12 @@ describe ActiveRecord::MTI do
     expect(user.tableoid).to eq(User.table_name)
   end
 
-  describe 'has the correct count for' do
+  it 'casts children properly' do
+    users = User.all
+    expect(users.select{ |u| u.is_a?(Admin) }.count).to eql(1)
+  end
 
+  describe 'has the correct count for' do
     it 'parents' do
       users = User.all
       expect(users.count).to be(2)
