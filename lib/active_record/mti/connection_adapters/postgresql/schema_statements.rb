@@ -61,8 +61,15 @@ module ActiveRecord
             if parent_table
               parent_table_primary_key = primary_key(parent_table)
               execute %Q(ALTER TABLE "#{table_name}" ADD PRIMARY KEY ("#{parent_table_primary_key}"))
+
+
               indexes(parent_table).each do |index|
-                add_index table_name, index.columns, :unique => index.unique
+                attributes = index.to_h.slice(:unique, :using, :where, :orders)
+
+                # Why rails insists on being inconsistant with itself is beyond me.
+                attributes[:order] = attributes.delete(:orders)
+
+                add_index table_name, index.columns, attributes
               end
               # triggers_for_table(parent_table).each do |trigger|
               #   name = trigger.first
