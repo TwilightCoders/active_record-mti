@@ -1,5 +1,4 @@
 require 'active_record/mti/version'
-require 'active_record/mti/railtie'
 require 'active_record'
 require 'active_record/connection_handling'
 require 'active_record/mti/schema_dumper'
@@ -8,6 +7,8 @@ require 'active_record/mti/model_schema'
 require 'active_record/mti/query_methods'
 require 'active_record/mti/calculations'
 require 'active_record/mti/connection_adapters/postgresql/schema_statements'
+
+require 'active_record/mti/railtie' if defined?(Rails::Railtie)
 
 module ActiveRecord
   module MTI
