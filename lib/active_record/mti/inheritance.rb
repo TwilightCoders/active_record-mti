@@ -39,7 +39,7 @@ module ActiveRecord
         end
 
         def uses_mti
-          self.inheritance_column = 'tableoid'
+          self.inheritance_column = nil
           @uses_mti = true
         end
 
@@ -57,10 +57,10 @@ module ActiveRecord
         # record instance. For single-table inheritance, we check the record
         # for a +type+ column and return the corresponding class.
         def discriminate_class_for_record(record)
-          if using_single_table_inheritance?(record)
-            find_sti_class(record[inheritance_column])
-          elsif using_multi_table_inheritance?(base_class)
+          if using_multi_table_inheritance?(base_class)
             find_mti_class(record)
+          elsif using_single_table_inheritance?(record)
+            find_sti_class(record[inheritance_column])
           else
             super
           end
