@@ -76,14 +76,13 @@ module ActiveRecord
 
           # Parent of inherited table
           def parent_tables(table_name)
-            sql = <<-SQL
+            result = exec_query(<<-SQL, "SCHEMA")
               SELECT pg_namespace.nspname, pg_class.relname
               FROM pg_catalog.pg_inherits
                 INNER JOIN pg_catalog.pg_class ON (pg_inherits.inhparent = pg_class.oid)
                 INNER JOIN pg_catalog.pg_namespace ON (pg_class.relnamespace = pg_namespace.oid)
               WHERE inhrelid = '#{table_name}'::regclass
             SQL
-            result = exec_query(sql, "SCHEMA")
             result.map{|a| a['relname']}
           end
 
