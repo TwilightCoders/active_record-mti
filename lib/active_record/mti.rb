@@ -11,7 +11,11 @@ require 'active_record/mti/connection_adapters/postgresql/schema_statements'
 
 module ActiveRecord
   module MTI
-    # Your code goes here...
+
+    def self.root
+      @root ||= Pathname.new(File.expand_path('../../', File.dirname(__FILE__)))
+    end
+
     def self.load
       ::ActiveRecord::Base.send :include, Inheritance
       ::ActiveRecord::Base.send :include, ActiveRecord::MTI::ModelSchema
