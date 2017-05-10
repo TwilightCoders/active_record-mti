@@ -25,9 +25,6 @@ In your migrations define a table to inherit from another table:
 ```ruby
 class CreateAccounts < ActiveRecord::Migration
   def change
-    # Things is the head of or inheritance tree representing all things
-    # both tangible and intangible.  Can be considered the vertices in
-    # the graph.
     create_table :accounts do |t|
       t.jsonb       :settings
       t.timestamps
@@ -75,8 +72,24 @@ end
 
 ### In your application code
 
+```ruby
+class Account < ::ActiveRecord::Base
+  uses_mti
+
+end
+
+class User < Account
+
+end
+
+class Developer < Account
+
+end
+```
+
 ActiveRecord queries work as usual with the following differences:
 
+* You need to specify which model represents the base of your multi table inheritance tree.  To do so, insert `uses_mti` in the model definition of the base class.
 * The default query of "*" is changed to include the OID of each row for subclass discrimination. The default select will be `SELECT cast("accounts"."tableoid"::regclass AS text), "accounts".*`
 
 ## Contributing
