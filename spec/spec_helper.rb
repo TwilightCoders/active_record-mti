@@ -1,6 +1,9 @@
 ENV["RAILS_ENV"] = "test"
 
 require 'active_record/mti'
+require "simplecov"
+
+SimpleCov.start
 
 ActiveRecord::MTI.load
 
