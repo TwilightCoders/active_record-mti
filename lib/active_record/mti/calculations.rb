@@ -52,7 +52,7 @@ module ActiveRecord
         relation.select_values = select_values
 
         # Remove our cast otherwise PSQL will insist that it be included in the GROUP
-        relation.arel.projections.select!{ |p| p.to_s != "cast(\"#{klass.table_name}\".\"tableoid\"::regclass as text)" } if @klass.using_multi_table_inheritance?
+        relation.arel.projections.select!{ |p| p.to_s != "CAST(\"#{klass.table_name}\".\"tableoid\"::regclass AS text)" } if @klass.using_multi_table_inheritance?
 
         calculated_data = @klass.connection.select_all(relation, nil, relation.arel.bind_values + bind_values)
 
@@ -102,7 +102,7 @@ module ActiveRecord
 
           # Remove our cast otherwise PSQL will insist that it be included in the GROUP
           # Somewhere between line 82 and 101 relation.arel.projections gets reset :/
-          relation.arel.projections.select!{ |p| p.to_s != "cast(\"#{klass.table_name}\".\"tableoid\"::regclass as text)" } if @klass.using_multi_table_inheritance?
+          relation.arel.projections.select!{ |p| p.to_s != "CAST(\"#{klass.table_name}\".\"tableoid\"::regclass AS text)" } if @klass.using_multi_table_inheritance?
 
           query_builder = relation.arel
           bind_values = query_builder.bind_values + relation.bind_values
