@@ -10,7 +10,6 @@ end
 class Post < ::ActiveRecord::Base
   belongs_to :user
   has_many :comments
-
 end
 
 class User < ::ActiveRecord::Base
@@ -23,4 +22,14 @@ end
 
 class Admin < User
   self.table_name = 'admins'
+end
+
+module Transportation
+  class Vehicle < ::ActiveRecord::Base
+    uses_mti
+  end
+
+  class Truck < Vehicle
+    self.table_name = 'vehicles/trucks'
+  end
 end

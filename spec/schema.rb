@@ -22,4 +22,17 @@ ActiveRecord::Schema.define do
     t.timestamps null: false
   end
 
+  #################################
+  ### Custom Inheritance Column ###
+  #################################
+
+  create_table :vehicles, force: true do |t|
+    t.string :color
+    t.string :type # Inheritance column
+    t.timestamps null: false
+  end
+
+  create_table "vehicles/trucks", force: true, inherits: :vehicles do |t|
+    t.integer :bed_size
+  end
 end

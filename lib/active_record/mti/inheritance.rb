@@ -34,12 +34,19 @@ module ActiveRecord
       module ClassMethods
 
         def inherited(child)
-          child.uses_mti if self.uses_mti?
           super
         end
 
-        def uses_mti
-          self.inheritance_column = nil
+        def uses_mti(table_name = nil, inheritance_column = nil)
+          # self.table_name ||= table_name
+          self.inheritance_column = inheritance_column
+
+          class << self
+            def columns
+              @columns ||= super.reject{|col| col.try(:name) == 'tableoid'}
+            end
+          end
+
           @uses_mti = true
         end
 
@@ -48,10 +55,26 @@ module ActiveRecord
         end
 
         def uses_mti?
-          @uses_mti ||= false
+          @uses_mti ||= check_inheritence_of(@table_name)
         end
 
         private
+
+        def check_inheritence_of(table_name)
+          return nil unless table_name
+
+          result = connection.execute <<-SQL
+            SELECT EXISTS ( SELECT 1
+            FROM pg_catalog.pg_inherits
+            WHERE inhrelid = 'public.#{table_name}'::regclass::oid
+            OR inhparent = 'public.#{table_name}'::regclass::oid);
+          SQL
+
+          # Some versions of PSQL return {"?column?"=>"t"}
+          # instead of {"first"=>"t"}, so we're saying screw it,
+          # just give me the first value of whatever is returned
+          result.try(:first).try(:values).try(:first) == 't'
+        end
 
         # Called by +instantiate+ to decide which class to use for a new
         # record instance. For single-table inheritance, we check the record
