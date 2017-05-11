@@ -39,7 +39,7 @@ module ActiveRecord
             end
 
             "#{full_table_name_prefix}#{contained}#{decorated_table_name(name)}#{full_table_name_suffix}"
-          elsif superclass.uses_mti?
+          else
             # STI subclasses always use their superclass' table.
             superclass.table_name
           end
