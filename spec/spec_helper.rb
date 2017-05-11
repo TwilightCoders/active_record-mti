@@ -1,14 +1,15 @@
-ENV["RAILS_ENV"] = "test"
+ENV['RAILS_ENV'] = 'test'
 
 require 'active_record/mti'
-require "simplecov"
+require 'simplecov'
+require 'database_cleaner'
 
 SimpleCov.start
 
 ActiveRecord::MTI.load
 
 db_config = {
-  adapter: "postgresql", database: "active_record_mti_test"
+  adapter: 'postgresql', database: 'active_record_mti_test'
 }
 
 db_config_admin = db_config.merge({ database: 'postgres', schema_search_path: 'public' })
@@ -25,6 +26,17 @@ Dir[File.join(File.dirname(__FILE__), '..', 'spec', 'support', '**', '**.rb')].e
 end
 
 RSpec.configure do |config|
-  config.order = "random"
+  config.order = 'random'
 
+  # Configure the DatabaseCleaner
+  config.before(:suite) do
+    DatabaseCleaner.strategy = :transaction
+    DatabaseCleaner.clean_with(:truncation)
+  end
+
+  config.around(:each) do |example|
+    DatabaseCleaner.cleaning do
+      example.run
+    end
+  end
 end

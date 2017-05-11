@@ -18,7 +18,7 @@ module ActiveRecord
       def tableoid_cast(klass)
         # Arel::Nodes::NamedFunction.new('CAST', [klass.arel_table[:tableoid].as('regclass')])
         # Arel::Nodes::NamedFunction.new('CAST', [@klass.arel_table['tableoid::regclass'].as('regclass')])
-        "CAST(\"#{klass.table_name}\".\"tableoid\"::regclass AS text)"
+        "TRIM(BOTH '\"' FROM CAST(\"#{klass.table_name}\".\"tableoid\"::regclass AS text)) AS tableoid"
       end
 
     end
