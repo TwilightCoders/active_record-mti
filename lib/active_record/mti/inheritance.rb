@@ -41,12 +41,6 @@ module ActiveRecord
           # self.table_name ||= table_name
           self.inheritance_column = inheritance_column
 
-          class << self
-            def columns
-              @columns ||= super.reject{|col| col.try(:name) == 'tableoid'}
-            end
-          end
-
           @uses_mti = true
         end
 
