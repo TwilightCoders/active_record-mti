@@ -18,12 +18,12 @@ module ActiveRecord
     end
 
     def self.load
-      ::ActiveRecord::Base.send :include, Inheritance
-      ::ActiveRecord::Base.send :include, ActiveRecord::MTI::ModelSchema
-      ::ActiveRecord::Relation.send :include, QueryMethods
-      ::ActiveRecord::Relation.send :include, ActiveRecord::MTI::Calculations
+      ::ActiveRecord::Base.send                                  :include, Inheritance
+      ::ActiveRecord::Base.send                                  :include, ModelSchema
+      ::ActiveRecord::Relation.send                              :include, QueryMethods
+      ::ActiveRecord::Relation.send                              :include, Calculations
       ::ActiveRecord::ConnectionAdapters::PostgreSQLAdapter.send :include, ConnectionAdapters::PostgreSQL::SchemaStatements
-      ::ActiveRecord::SchemaDumper.send :include, ActiveRecord::MTI::SchemaDumper
+      ::ActiveRecord::SchemaDumper.send                          :include, SchemaDumper
     end
   end
 end
