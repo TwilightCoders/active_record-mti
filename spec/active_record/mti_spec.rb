@@ -45,31 +45,40 @@ describe ActiveRecord::MTI do
     end
   end
 
-  describe 'allows creation pass-through on views' do
-    class UserView < User
-      self.table_name = "users_all"
+
+  describe 'views' do
+    before(:each) do
+      class UserView < User
+        self.table_name = "users_all"
+      end
+
+      UserView.connection.execute <<-SQL
+        CREATE OR REPLACE VIEW "users_all"
+        AS #{ User.all.to_sql }
+      SQL
     end
 
-    UserView.connection.execute <<-SQL
-      CREATE OR REPLACE VIEW "users_all"
-      AS #{ User.all.to_sql }
-    SQL
+    it 'do not report tableoid in columns' do
+      expect(UserView.columns.map(&:name)).not_to include('tableoid')
+    end
 
-    UserView.create(email: 'dale@twilightcoders.net')
+    if ActiveRecord::Base.connection.version >= Gem::Version.new('9.4')
+      it 'allows creation pass-through' do
+
+        UserView.create(email: 'dale@twilightcoders.net')
+      end
+    end
   end
-
 
   describe 'dynamic class creation' do
     it 'infers the table_name from superclass not base_class' do
       God = Class.new(Admin)
-      expect(God.table_name).to eql(Admin.table_name)
-    end
 
-    it 'infers the table_name from superclass not base_class' do
       Hacker = Class.new(Admin) do
         uses_mti
       end
 
+      expect(God.table_name).to eql(Admin.table_name)
       expect(Hacker.table_name).to eql('admin/hackers')
     end
   end
