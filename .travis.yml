@@ -14,7 +14,7 @@ after_success:
   - bundle exec codeclimate-test-reporter
 
 addons:
-  postgresql: "9.1"
+  postgresql: "9.3"
 
 env:
   - RSPEC_VERSION="<2.99"
