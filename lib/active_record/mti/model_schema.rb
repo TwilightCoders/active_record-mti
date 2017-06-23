@@ -30,7 +30,6 @@ module ActiveRecord
 
             "#{full_table_name_prefix}#{contained}#{undecorated_table_name(name)}#{full_table_name_suffix}"
           elsif uses_mti?
-
             # Nested classes are prefixed with singular parent table name.
             if superclass < Base && !superclass.abstract_class?
               contained = superclass.table_name

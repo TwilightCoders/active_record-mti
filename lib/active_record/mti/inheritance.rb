@@ -33,12 +33,7 @@ module ActiveRecord
 
       module ClassMethods
 
-        def inherited(child)
-          super
-        end
-
-        def uses_mti(table_name = nil, inheritance_column = nil)
-          # self.table_name ||= table_name
+        def uses_mti(custom_table_name = nil, inheritance_column = nil)
           self.inheritance_column = inheritance_column
 
           @uses_mti = true
@@ -49,7 +44,8 @@ module ActiveRecord
         end
 
         def uses_mti?
-          @uses_mti ||= check_inheritence_of(@table_name)
+          @uses_mti = check_inheritence_of(@table_name) if @uses_mti.nil?
+          @uses_mti
         end
 
         private
@@ -65,9 +61,9 @@ module ActiveRecord
           SQL
 
           # Some versions of PSQL return {"?column?"=>"t"}
-          # instead of {"first"=>"t"}, so we're saying screw it,
+          # instead of {"exists"=>"t"}, so we're saying screw it,
           # just give me the first value of whatever is returned
-          result.try(:first).try(:values).try(:first) == 't'
+          return result.try(:first).try(:values).try(:first) == 't'
         end
 
         # Called by +instantiate+ to decide which class to use for a new

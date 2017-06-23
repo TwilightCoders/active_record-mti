@@ -4,6 +4,39 @@ require 'pry'
 
 describe ActiveRecord::MTI do
 
+  xit 'returns non-nil value when checking uses_mti?' do
+    # Mod = Class.new(User)
+    # expect(Mod.uses_mti?).to be(true)
+  end
+
+  context 'class definition' do
+
+    describe 'for classes that use MTI' do
+      it 'doesn\'t check inheritence multiple times' do
+        Admin.instance_variable_set(:@uses_mti, nil)
+        expect(Admin).to receive(:check_inheritence_of).and_call_original.exactly(1).times
+
+        Admin.create(email: 'foo@bar.baz', god_powers: 3)
+        Admin.create(email: 'foo2@bar.baz', god_powers: 3)
+        Admin.create(email: 'foo24@bar.baz', god_powers: 3)
+
+      end
+    end
+
+    describe 'for classes that don\'t use MTI' do
+      it 'doesn\'t check inheritence multiple times' do
+        Post.instance_variable_set(:@uses_mti, nil)
+        expect(Post).to receive(:check_inheritence_of).and_call_original.exactly(1).times
+
+        Post.create(title: 'foo@bar.baz')
+        Post.create(title: 'foo2@bar.baz')
+        Post.create(title: 'foo24@bar.baz')
+
+      end
+    end
+
+  end
+
   context 'default inheritance_column model' do
     let!(:user) { User.create(email: 'foo@bar.baz') }
     let!(:admin) { Admin.create(email: 'foo@bar.baz', god_powers: 3) }
