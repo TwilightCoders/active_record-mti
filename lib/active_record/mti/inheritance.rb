@@ -54,10 +54,15 @@ module ActiveRecord
           return nil unless table_name
 
           result = connection.execute <<-SQL
-            SELECT EXISTS ( SELECT 1
-            FROM pg_catalog.pg_inherits
-            WHERE inhrelid = 'public.#{table_name}'::regclass::oid
-            OR inhparent = 'public.#{table_name}'::regclass::oid);
+            SELECT EXISTS (
+              SELECT 1
+              FROM      pg_catalog.pg_inherits AS i
+              LEFT JOIN pg_catalog.pg_rewrite  AS r    ON r.ev_class = 'public.#{table_name}'::regclass::oid
+              LEFT JOIN pg_catalog.pg_depend   AS d    ON d.objid    = r.oid
+              LEFT JOIN pg_catalog.pg_class    AS cl_d ON cl_d.oid   = d.refobjid
+              WHERE inhrelid  = COALESCE(cl_d.relname, 'public.#{table_name}')::regclass::oid
+              OR    inhparent = COALESCE(cl_d.relname, 'public.#{table_name}')::regclass::oid
+            );
           SQL
 
           # Some versions of PSQL return {"?column?"=>"t"}
