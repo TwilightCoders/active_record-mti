@@ -10,6 +10,10 @@ ActiveRecord::Schema.define do
     t.integer :god_powers
   end
 
+  create_table 'admin/hackers', force: true, inherits: :admins do |t|
+    t.integer :god_powers
+  end
+
   create_table :posts, force: true do |t|
     t.integer :user_id
     t.string :title
