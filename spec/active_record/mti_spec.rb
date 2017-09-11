@@ -13,7 +13,7 @@ describe ActiveRecord::MTI do
 
     describe 'for classes that use MTI' do
       it 'doesn\'t check inheritence multiple times' do
-        Admin.instance_variable_set(:@uses_mti, nil)
+        Admin.instance_variable_set(:@mti_setup, false)
         expect(Admin).to receive(:check_inheritence_of).and_call_original.exactly(1).times
 
         Admin.create(email: 'foo@bar.baz', god_powers: 3)
