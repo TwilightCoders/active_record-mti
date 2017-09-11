@@ -12,7 +12,7 @@ describe ActiveRecord::MTI do
   context 'class definition' do
 
     describe 'for classes that use MTI' do
-      it 'doesn\'t check inheritence multiple times' do
+      it "doesn't check inheritence multiple times" do
         Admin.instance_variable_set(:@mti_setup, false)
         expect(Admin).to receive(:check_inheritence_of).and_call_original.exactly(1).times
 
@@ -23,8 +23,8 @@ describe ActiveRecord::MTI do
       end
     end
 
-    describe 'for classes that don\'t use MTI' do
-      it 'doesn\'t check inheritence multiple times' do
+    describe "for classes that don't use MTI" do
+      it "doesn't check inheritence multiple times" do
         Post.instance_variable_set(:@uses_mti, nil)
         expect(Post).to receive(:check_inheritence_of).and_call_original.exactly(1).times
 
