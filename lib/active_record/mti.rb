@@ -14,6 +14,17 @@ require 'active_record/mti/railtie' if defined?(Rails::Railtie)
 module ActiveRecord
   module MTI
 
+    class << self
+      attr_writer :logger
+
+      def logger
+        @logger ||= Logger.new($stdout).tap do |log|
+          log.progname = self.name
+          log.level = Logger::INFO
+        end
+      end
+    end
+
     def self.root
       @root ||= Pathname.new(File.expand_path('../../', File.dirname(__FILE__)))
     end

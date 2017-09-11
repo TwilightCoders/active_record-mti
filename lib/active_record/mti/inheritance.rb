@@ -68,7 +68,10 @@ module ActiveRecord
         private
 
         def check_inheritence_of(table_name)
+          ActiveRecord::MTI.logger.debug "Trying to check inheritance of table with no table name (#{self})" unless table_name
           return nil unless table_name
+
+          ActiveRecord::MTI.logger.debug "Checking inheritance for #{table_name}"
 
           result = connection.execute <<-SQL
             SELECT EXISTS (
@@ -109,6 +112,7 @@ module ActiveRecord
           @tableoid_column = tableoid_query['has_tableoid_column'] == 't'
 
           if (has_tableoid_column?)
+            ActiveRecord::MTI.logger.debug "#{table_name} has tableoid column!"
             @mti_tableoid_projection = arel_table[:tableoid].as('tableoid')
           else
             @mti_tableoid_projection = nil
