@@ -24,6 +24,7 @@ module ActiveRecord
   module MTI
     module Inheritance
       extend ActiveSupport::Concern
+      @mti_tableoids = {}
 
       included do
         scope :discern_inheritance, -> {
@@ -37,6 +38,9 @@ module ActiveRecord
           self.inheritance_column = inheritance_column
 
           @uses_mti = true
+          @mti_setup = false
+          @mti_tableoid_projection = nil
+          @tableoid_column = nil
         end
 
         def using_multi_table_inheritance?(klass = self)
@@ -44,8 +48,21 @@ module ActiveRecord
         end
 
         def uses_mti?
-          @uses_mti = check_inheritence_of(@table_name) if @uses_mti.nil?
+          inheritence_check = check_inheritence_of(@table_name) unless @mti_setup
+          @uses_mti = inheritence_check if @uses_mti.nil?
           @uses_mti
+        end
+
+        def has_tableoid_column?
+          @tableoid_column != false
+        end
+
+        def mti_tableoid_projection
+          @mti_tableoid_projection
+        end
+
+        def mti_tableoid_projection=(value)
+          @mti_tableoid_projection = value
         end
 
         private
@@ -65,10 +82,39 @@ module ActiveRecord
             );
           SQL
 
+          uses_inheritence = result.try(:first).try(:values).try(:first) == 't'
+
+          register_tableoid(table_name, uses_inheritence)
+
+          @mti_setup = true
           # Some versions of PSQL return {"?column?"=>"t"}
           # instead of {"exists"=>"t"}, so we're saying screw it,
           # just give me the first value of whatever is returned
-          return result.try(:first).try(:values).try(:first) == 't'
+          return uses_inheritence
+        end
+
+        def register_tableoid(table_name, uses_mti=false)
+
+          tableoid_query = connection.execute(<<-SQL
+            SELECT '#{table_name}'::regclass::oid AS tableoid, (SELECT EXISTS (
+              SELECT 1
+              FROM   pg_catalog.pg_attribute
+              WHERE  attrelid = '#{table_name}'::regclass
+              AND    attname  = 'tableoid'
+              AND    NOT attisdropped
+            )) AS has_tableoid_column
+          SQL
+          ).first
+          tableoid = tableoid_query['tableoid']
+          @tableoid_column = tableoid_query['has_tableoid_column'] == 't'
+
+          if (has_tableoid_column?)
+            @mti_tableoid_projection = arel_table[:tableoid].as('tableoid')
+          else
+            @mti_tableoid_projection = nil
+          end
+
+          Inheritance.add_mti(tableoid, self)
         end
 
         # Called by +instantiate+ to decide which class to use for a new
@@ -76,7 +122,7 @@ module ActiveRecord
         # for a +type+ column and return the corresponding class.
         def discriminate_class_for_record(record)
           if using_multi_table_inheritance?(base_class)
-            find_mti_class(record)
+            find_mti_class(record) || base_class
           elsif using_single_table_inheritance?(record)
             find_sti_class(record[inheritance_column])
           else
@@ -87,9 +133,11 @@ module ActiveRecord
         # Search descendants for one who's table_name is equal to the returned tableoid.
         # This indicates the class of the record
         def find_mti_class(record)
-          record['tableoid'].classify.constantize
-        rescue NameError => e
-          descendants.find(Proc.new{ self }) { |d| d.table_name == record['tableoid'] }
+          if (has_tableoid_column?)
+            Inheritance.find_mti(record['tableoid'])
+          else
+            self
+          end
         end
 
         # Type condition only applies if it's STI, otherwise it's
@@ -104,8 +152,16 @@ module ActiveRecord
             sti_column.in(sti_names)
           end
         end
-
       end
+
+      def self.add_mti(tableoid, klass)
+        @mti_tableoids[tableoid.to_s.to_sym] = klass
+      end
+
+      def self.find_mti(tableoid)
+        @mti_tableoids[tableoid.to_s.to_sym]
+      end
+
     end
   end
 end

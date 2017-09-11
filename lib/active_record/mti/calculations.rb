@@ -102,7 +102,7 @@ module ActiveRecord
 
           # Remove our cast otherwise PSQL will insist that it be included in the GROUP
           # Somewhere between line 82 and 101 relation.arel.projections gets reset :/
-          relation.arel.projections.select!{ |p| p.to_s != tableoid_cast(klass) } if @klass.using_multi_table_inheritance?
+          relation.arel.projections.select!{ |p| p != tableoid_cast(klass) } if @klass.using_multi_table_inheritance?
 
           query_builder = relation.arel
           bind_values = query_builder.bind_values + relation.bind_values
