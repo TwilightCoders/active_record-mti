@@ -1,4 +1,9 @@
-# ActiveRecord::MTI [![Build Status](https://travis-ci.org/TwilightCoders/active_record-mti.svg?branch=master)](https://travis-ci.org/TwilightCoders/active_record-mti) [![Code Climate](https://codeclimate.com/github/TwilightCoders/active_record-mti/badges/gpa.svg)](https://codeclimate.com/github/TwilightCoders/active_record-mti) [![Test Coverage](https://codeclimate.com/github/TwilightCoders/active_record-mti/badges/coverage.svg)](https://codeclimate.com/github/TwilightCoders/active_record-mti/coverage)
+[![Version      ](https://img.shields.io/gem/v/active_record-mti.svg?maxAge=2592000)](https://rubygems.org/gems/active_record-mti)
+[![Build Status ](https://travis-ci.org/TwilightCoders/active_record-mti.svg)](https://travis-ci.org/TwilightCoders/active_record-mti)
+[![Code Climate ](https://codeclimate.com/github/TwilightCoders/active_record-mti/badges/gpa.svg)](https://codeclimate.com/github/TwilightCoders/active_record-mti)
+[![Test Coverage](https://codeclimate.com/github/TwilightCoders/active_record-mti/badges/coverage.svg)](https://codeclimate.com/github/TwilightCoders/active_record-mti/coverage)
+
+# ActiveRecord::MTI
 
 Allows for true native inheritance of tables in PostgreSQL
 
