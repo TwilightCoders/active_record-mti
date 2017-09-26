@@ -61,12 +61,12 @@ describe ActiveRecord::MTI do
     describe 'has the correct count for' do
       it 'parents' do
         users = User.all
-        expect(users.count).to be(2)
+        expect(users.count).to eq(2)
       end
 
       it 'children' do
         admins = Admin.all
-        expect(admins.count).to be(1)
+        expect(admins.count).to eq(1)
       end
     end
 
