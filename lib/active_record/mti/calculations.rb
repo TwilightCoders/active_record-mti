@@ -23,17 +23,26 @@ module ActiveRecord
           distinct = nil if column_name =~ /\s*DISTINCT[\s(]+/i
         end
 
-        @skip_tableoid_cast = true
-
-        results = if group_values.any?
-          execute_grouped_calculation(operation, column_name, distinct)
-        else
-          execute_simple_calculation(operation, column_name, distinct)
+        swap_and_restore_tableoid_cast(true) do
+          if group_values.any?
+            execute_grouped_calculation(operation, column_name, distinct)
+          else
+            execute_simple_calculation(operation, column_name, distinct)
+          end
         end
+      end
 
-        @skip_tableoid_cast = false
+      def strip_tableoid_cast(relation)
+        # relation.arel.projections.select!{ |p| p.to_s != tableoid_cast(klass) } if @klass.using_multi_table_inheritance?
+        relation.arel.projections.select!{ |p| p != tableoid_cast(klass) } if @klass.using_multi_table_inheritance?
+      end
 
-        results
+      def swap_and_restore_tableoid_cast(value, &block)
+        orignal_value = @skip_tableoid_cast
+        @skip_tableoid_cast = value
+        return_value = yield
+        @skip_tableoid_cast = orignal_value
+        return return_value
       end
 
     end
