@@ -6,7 +6,8 @@ module ActiveRecord
 
       # Retrieve the OID as well on a default select
       def build_select(arel)
-        if @klass.using_multi_table_inheritance? && @klass.has_tableoid_column?
+
+        if tableoid_cast?(@klass) || select_values.delete(:tableoid)
           arel.project(tableoid_cast(@klass))
         end
 
@@ -15,6 +16,13 @@ module ActiveRecord
         else
           arel.project(@klass.arel_table[Arel.star])
         end
+      end
+
+      def tableoid_cast?(klass)
+        !@skip_tableoid_cast &&
+        @klass.using_multi_table_inheritance? &&
+        @klass.has_tableoid_column? &&
+        !group_values.any?
       end
 
       def tableoid_cast(klass)
