@@ -68,7 +68,7 @@ module ActiveRecord
 
           uses_inheritence = result.try(:first)['uses_inheritence'] == 't'
 
-          register_tableoid(table_name, uses_inheritence)
+          register_tableoid(table_name) if uses_inheritence
 
           @mti_setup = true
           # Some versions of PSQL return {"?column?"=>"t"}
@@ -79,7 +79,7 @@ module ActiveRecord
           return uses_inheritence == true
         end
 
-        def register_tableoid(table_name, uses_mti=false)
+        def register_tableoid(table_name)
 
           tableoid_query = connection.execute(<<-SQL
             SELECT '#{table_name}'::regclass::oid AS tableoid, (SELECT EXISTS (
