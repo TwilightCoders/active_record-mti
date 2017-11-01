@@ -15,6 +15,8 @@ module ActiveRecord
 
       module ClassMethods
 
+        @uses_mti = nil
+
         def uses_mti(custom_table_name = nil, inheritance_column = nil)
           self.inheritance_column = inheritance_column
 
@@ -30,7 +32,13 @@ module ActiveRecord
 
         def uses_mti?
           inheritence_check = check_inheritence_of(@table_name) unless @mti_setup
-          @uses_mti = inheritence_check if @uses_mti.nil?
+
+          if @uses_mti.nil? && @uses_mti = inheritence_check
+            descendants.each do |d|
+              d.uses_mti?
+            end
+          end
+
           @uses_mti
         end
 
