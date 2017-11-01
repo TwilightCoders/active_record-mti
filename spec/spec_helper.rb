@@ -13,7 +13,7 @@ require 'active_record/mti'
 ActiveRecord::MTI.load
 
 db_config = {
-  adapter: 'postgresql', database: 'active_record_mti_test'
+  adapter: 'postgresql', database: 'active_record-mti-test'
 }
 
 db_config_admin = db_config.merge({ database: 'postgres', schema_search_path: 'public' })
