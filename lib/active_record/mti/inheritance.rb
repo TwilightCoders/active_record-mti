@@ -93,7 +93,9 @@ module ActiveRecord
           # Some versions of PSQL return {"?column?"=>"t"}
           # instead of {"exists"=>"t"}, so we're saying screw it,
           # just give me the first value of whatever is returned
-          return uses_inheritence
+
+          # Ensure a boolean is returned
+          return uses_inheritence == true
         end
 
         def register_tableoid(table_name, uses_mti=false)
