@@ -32,11 +32,6 @@ module ActiveRecord
         end
       end
 
-      def strip_tableoid_cast(relation)
-        # relation.arel.projections.select!{ |p| p.to_s != tableoid_cast(klass) } if @klass.using_multi_table_inheritance?
-        relation.arel.projections.select!{ |p| p != tableoid_cast(klass) } if @klass.using_multi_table_inheritance?
-      end
-
       def swap_and_restore_tableoid_cast(value, &block)
         orignal_value = @skip_tableoid_cast
         @skip_tableoid_cast = value
