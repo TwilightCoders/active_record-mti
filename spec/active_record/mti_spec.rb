@@ -91,10 +91,6 @@ describe ActiveRecord::MTI do
       SQL
     end
 
-    it 'do not report tableoid in columns' do
-      expect(UserView.columns.map(&:name)).not_to include('tableoid')
-    end
-
     if ActiveRecord::Base.connection.version >= Gem::Version.new('9.4')
       it 'allows creation pass-through' do
 
