@@ -1,10 +1,14 @@
 ENV['RAILS_ENV'] = 'test'
 
-require 'active_record/mti'
-require 'simplecov'
 require 'database_cleaner'
 
-SimpleCov.start
+require 'simplecov'
+SimpleCov.start do
+  # add_group 'Lib', 'lib'
+  add_filter 'spec'
+end
+
+require 'active_record/mti'
 
 ActiveRecord::MTI.load
 
