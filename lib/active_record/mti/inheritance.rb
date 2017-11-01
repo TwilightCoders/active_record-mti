@@ -1,26 +1,7 @@
 require 'active_support/concern'
 
 module ActiveRecord
-  # == Multi table inheritance
-  #
-  # PostgreSQL allows for table inheritance. To enable this in ActiveRecord, ensure that the
-  # inheritance_column is named "tableoid" (can be changed by setting <tt>Base.inheritance_column</tt>).
-  # This means that an inheritance looking like this:
-  #
-  #   class Company < ActiveRecord::Base;
-  #     self.inheritance_column = 'tableoid'
-  #   end
-  #   class Firm < Company; end
-  #   class Client < Company; end
-  #   class PriorityClient < Client; end
-  #
-  # When you do <tt>Firm.create(name: "37signals")</tt>, this record will be saved in
-  # the firms table which inherits from companies. You can then fetch this row again using
-  # <tt>Company.where(name: '37signals').first</tt> and it will return a Firm object.
-  #
-  # Note, all the attributes for all the cases are kept in the same table. Read more:
-  # http://www.martinfowler.com/eaaCatalog/singleTableInheritance.html
-  #
+  # == Multi-Table Inheritance
   module MTI
     module Inheritance
       extend ActiveSupport::Concern
