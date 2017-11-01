@@ -95,8 +95,8 @@ module ActiveRecord
           @tableoid_column = tableoid_query['has_tableoid_column'] == 't'
 
           if (has_tableoid_column?)
-            ActiveRecord::MTI.logger.debug "#{table_name} has tableoid column!"
             @mti_tableoid_projection = arel_table[:tableoid].as('tableoid')
+            ActiveRecord::MTI.logger.debug "#{table_name} has tableoid column! (#{tableoid})"
           else
             @mti_tableoid_projection = nil
           end
