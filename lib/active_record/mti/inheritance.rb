@@ -20,7 +20,7 @@ module ActiveRecord
 
           @uses_mti = true
           @mti_setup = false
-          @mti_tableoid_projection = nil
+          @mti_type_column = nil
           @tableoid_column = nil
         end
 
@@ -38,12 +38,12 @@ module ActiveRecord
           @tableoid_column != false
         end
 
-        def mti_tableoid_projection
-          @mti_tableoid_projection
+        def mti_type_column
+          @mti_type_column
         end
 
-        def mti_tableoid_projection=(value)
-          @mti_tableoid_projection = value
+        def mti_type_column=(value)
+          @mti_type_column = value
         end
 
         private
@@ -95,10 +95,11 @@ module ActiveRecord
           @tableoid_column = tableoid_query['has_tableoid_column'] == 't'
 
           if (has_tableoid_column?)
-            @mti_tableoid_projection = arel_table[:tableoid].as('tableoid')
             ActiveRecord::MTI.logger.debug "#{table_name} has tableoid column! (#{tableoid})"
+            self.attribute :tableoid, ActiveRecord::ConnectionAdapters::PostgreSQL::OID::Integer.new
+            @mti_type_column = arel_table[:tableoid]
           else
-            @mti_tableoid_projection = nil
+            @mti_type_column = nil
           end
 
           Inheritance.add_mti(tableoid, self)
