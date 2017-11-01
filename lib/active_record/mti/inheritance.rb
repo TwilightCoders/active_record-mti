@@ -82,10 +82,10 @@ module ActiveRecord
               LEFT JOIN pg_catalog.pg_class    AS cl_d ON cl_d.oid   = d.refobjid
               WHERE inhrelid  = COALESCE(cl_d.relname, 'public.#{table_name}')::regclass::oid
               OR    inhparent = COALESCE(cl_d.relname, 'public.#{table_name}')::regclass::oid
-            );
+            ) AS uses_inheritence;
           SQL
 
-          uses_inheritence = result.try(:first).try(:values).try(:first) == 't'
+          uses_inheritence = result.try(:first)['uses_inheritence'] == 't'
 
           register_tableoid(table_name, uses_inheritence)
 
