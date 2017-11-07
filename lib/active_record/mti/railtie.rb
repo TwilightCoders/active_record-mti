@@ -4,7 +4,7 @@ module ActiveRecord
   module MTI
     class Railtie < Rails::Railtie
       initializer 'active_record-mti.load' do |_app|
-        ActiveRecord::MTI.logger.info "ActiveRecord::MTI railtie initializer"
+        ActiveRecord::MTI.logger.debug "active_record-mti.load"
         ActiveSupport.on_load(:active_record) do
           ActiveRecord::MTI.load
         end
