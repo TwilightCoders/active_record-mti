@@ -11,7 +11,7 @@ Gem::Specification.new do |spec|
 
   spec.summary       = %q{Multi Table Inheritance for PostgreSQL in Rails}
   spec.description   = %q{Allows use of native inherited tables in PostgreSQL}
-  spec.homepage      = ""
+  spec.homepage      = "https://github.com/twilightcoders/active_record-mti"
   spec.license       = "MIT"
 
   # Prevent pushing this gem to RubyGems.org. To allow pushes either set the 'allowed_push_host'
@@ -21,7 +21,6 @@ Gem::Specification.new do |spec|
   else
     raise 'RubyGems 2.0 or newer is required to protect against public gem pushes.'
   end
-
 
   spec.files         = `git ls-files -z`.split("\x0")
   spec.bindir        = 'bin'
