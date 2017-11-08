@@ -28,8 +28,8 @@ Gem::Specification.new do |spec|
   spec.test_files    = spec.files.grep(%r{^(test|spec|features)/})
   spec.require_paths = ['lib', 'spec']
 
-  rails_versions = ['>= 4.1', '< 5']
-  spec.required_ruby_version = '>= 2.0.0'
+  rails_versions = ['>= 4', '< 6']
+  spec.required_ruby_version = '>= 2.0'
 
   spec.add_runtime_dependency 'pg', '~> 0'
   spec.add_runtime_dependency 'activerecord', rails_versions
