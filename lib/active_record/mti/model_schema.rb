@@ -44,6 +44,14 @@ module ActiveRecord
           end
         end
 
+        def full_table_name_prefix #:nodoc:
+          (parents.detect{ |p| p.respond_to?(:table_name_prefix) } || self).table_name_prefix
+        end
+
+        def full_table_name_suffix #:nodoc:
+          (parents.detect {|p| p.respond_to?(:table_name_suffix) } || self).table_name_suffix
+        end
+
         private
 
         # Guesses the table name, but does not decorate it with prefix and suffix information.
