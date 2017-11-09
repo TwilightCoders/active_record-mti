@@ -104,7 +104,7 @@ module ActiveRecord
 
           if (has_tableoid_column?)
             ActiveRecord::MTI.logger.debug "#{table_name} has tableoid column! (#{tableoid})"
-            self.attribute :tableoid, get_integer_oid_class.new
+            add_tableoid_column
             @mti_type_column = arel_table[:tableoid]
           else
             @mti_type_column = nil
@@ -149,6 +149,13 @@ module ActiveRecord
           end
         end
 
+        def add_tableoid_column
+          if self.respond_to? :attribute
+            self.attribute :tableoid, get_integer_oid_class.new
+          else
+            columns.unshift ActiveRecord::ConnectionAdapters::PostgreSQLColumn.new('tableoid', nil, ActiveRecord::ConnectionAdapters::PostgreSQLAdapter::OID::Integer.new, "oid", false)
+          end
+        end
 
         # Rails decided to make a breaking change in it's 4.x series :P
         def get_integer_oid_class
