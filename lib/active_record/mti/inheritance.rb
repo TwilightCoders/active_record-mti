@@ -16,13 +16,13 @@ module ActiveRecord
       module ClassMethods
 
         @uses_mti = nil
+        @mti_type_column = nil
 
         def uses_mti(custom_table_name = nil, inheritance_column = nil)
           self.inheritance_column = inheritance_column
 
           @uses_mti = true
           @mti_setup = false
-          @mti_type_column = nil
           @tableoid_column = nil
         end
 
