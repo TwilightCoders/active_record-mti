@@ -31,9 +31,9 @@ module ActiveRecord
         end
 
         def uses_mti?
-          inheritence_check = check_inheritence_of(@table_name) unless @mti_setup
+          inheritance_check = check_inheritance_of(@table_name) unless @mti_setup
 
-          if @uses_mti.nil? && @uses_mti = inheritence_check
+          if @uses_mti.nil? && @uses_mti = inheritance_check
             descendants.each do |d|
               d.uses_mti?
             end
@@ -56,7 +56,7 @@ module ActiveRecord
 
         private
 
-        def check_inheritence_of(table_name)
+        def check_inheritance_of(table_name)
           ActiveRecord::MTI.logger.debug "Trying to check inheritance of table with no table name (#{self})" unless table_name
           return nil unless table_name
 
@@ -71,12 +71,12 @@ module ActiveRecord
               LEFT JOIN pg_catalog.pg_class    AS cl_d ON cl_d.oid   = d.refobjid
               WHERE inhrelid  = COALESCE(cl_d.relname, 'public.#{table_name}')::regclass::oid
               OR    inhparent = COALESCE(cl_d.relname, 'public.#{table_name}')::regclass::oid
-            ) AS uses_inheritence;
+            ) AS uses_inheritance;
           SQL
 
-          uses_inheritence = ActiveRecord::MTI.testify(result.try(:first)['uses_inheritence'])
+          uses_inheritance = ActiveRecord::MTI.testify(result.try(:first)['uses_inheritance'])
 
-          register_tableoid(table_name) if uses_inheritence
+          register_tableoid(table_name) if uses_inheritance
 
           @mti_setup = true
           # Some versions of PSQL return {"?column?"=>"t"}
@@ -84,7 +84,7 @@ module ActiveRecord
           # just give me the first value of whatever is returned
 
           # Ensure a boolean is returned
-          return uses_inheritence == true
+          return uses_inheritance == true
         end
 
         def register_tableoid(table_name)
