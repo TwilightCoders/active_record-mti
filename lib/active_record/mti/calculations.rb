@@ -33,10 +33,10 @@ module ActiveRecord
       end
 
       def swap_and_restore_tableoid_cast(value, &block)
-        orignal_value = @skip_tableoid_cast
-        @skip_tableoid_cast = value
+        orignal_value = Thread.current['skip_tableoid_cast']
+        Thread.current['skip_tableoid_cast'] = value
         return_value = yield
-        @skip_tableoid_cast = orignal_value
+        Thread.current['skip_tableoid_cast'] = orignal_value
         return return_value
       end
 

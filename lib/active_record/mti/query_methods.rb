@@ -72,7 +72,7 @@ module ActiveRecord
       end
 
       def tableoid?(klass)
-        !@skip_tableoid_cast &&
+        !Thread.current['skip_tableoid_cast'] &&
         @klass.using_multi_table_inheritance? &&
         @klass.has_tableoid_column?
       end
