@@ -31,11 +31,19 @@ describe ActiveRecord::MTI::Calculations do
 
   context "projects tableoid" do
     it "and groups tableoid when selecting :tableoid" do
-      expect(Admin.select(:email, :tableoid).group(:email).to_sql).to eq("SELECT \"admins\".\"tableoid\" AS tableoid, \"admins\".\"email\" FROM \"admins\" GROUP BY \"admins\".\"tableoid\", \"admins\".\"email\"")
+      sql = Admin.select(:email, :tableoid).group(:email).to_sql
+
+      expect(sql).to match(/SELECT .*, \"admins\".\"tableoid\" AS tableoid FROM \"admins\"/)
+
+      expect(sql).to match(/GROUP BY .*, \"admins\".\"tableoid\"/)
     end
 
     it "when grouping :tableoid" do
-      expect(Admin.select(:email).group(:email, :tableoid).to_sql).to eq("SELECT \"admins\".\"tableoid\" AS tableoid, \"admins\".\"email\" FROM \"admins\" GROUP BY \"admins\".\"tableoid\", \"admins\".\"email\"")
+      sql = Admin.select(:email).group(:email, :tableoid).to_sql
+
+      expect(sql).to match(/SELECT .*, \"admins\".\"tableoid\" AS tableoid FROM \"admins\"/)
+
+      expect(sql).to match(/GROUP BY .*, \"admins\".\"tableoid\"/)
     end
   end
 
