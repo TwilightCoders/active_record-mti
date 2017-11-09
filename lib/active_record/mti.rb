@@ -35,8 +35,8 @@ module ActiveRecord
       ::ActiveRecord::Relation.send                              :include, QueryMethods
       ::ActiveRecord::Relation.send                              :include, Calculations
       ::ActiveRecord::ConnectionAdapters::PostgreSQLAdapter.send :prepend, ConnectionAdapters::PostgreSQL::Adapter
-      ::ActiveRecord::ConnectionAdapters::PostgreSQLAdapter.send :include, ConnectionAdapters::PostgreSQL::SchemaStatements
-      ::ActiveRecord::SchemaDumper.send                          :include, SchemaDumper
+      ::ActiveRecord::ConnectionAdapters::PostgreSQLAdapter.send :prepend, ConnectionAdapters::PostgreSQL::SchemaStatements
+      ::ActiveRecord::SchemaDumper.send                          :prepend, SchemaDumper
     end
   end
 end
