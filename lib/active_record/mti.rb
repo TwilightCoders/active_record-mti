@@ -38,5 +38,10 @@ module ActiveRecord
       ::ActiveRecord::ConnectionAdapters::PostgreSQLAdapter.send :prepend, ConnectionAdapters::PostgreSQL::SchemaStatements
       ::ActiveRecord::SchemaDumper.send                          :prepend, SchemaDumper
     end
+
+    def self.testify(value)
+      value || value == 't' || value == 1 || value == '1'
+    end
+
   end
 end

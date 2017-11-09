@@ -74,7 +74,7 @@ module ActiveRecord
             ) AS uses_inheritence;
           SQL
 
-          uses_inheritence = result.try(:first)['uses_inheritence'] == 't'
+          uses_inheritence = ActiveRecord::MTI.testify(result.try(:first)['uses_inheritence'])
 
           register_tableoid(table_name) if uses_inheritence
 
@@ -100,7 +100,7 @@ module ActiveRecord
           SQL
           ).first
           tableoid = tableoid_query['tableoid']
-          @tableoid_column = tableoid_query['has_tableoid_column'] == 't'
+          @tableoid_column = ActiveRecord::MTI.testify(tableoid_query['has_tableoid_column'])
 
           if (has_tableoid_column?)
             ActiveRecord::MTI.logger.debug "#{table_name} has tableoid column! (#{tableoid})"
