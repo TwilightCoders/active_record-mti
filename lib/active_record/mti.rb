@@ -32,8 +32,8 @@ module ActiveRecord
     def self.load
       ::ActiveRecord::Base.send                                  :include, Inheritance
       ::ActiveRecord::Base.send                                  :include, ModelSchema
-      ::ActiveRecord::Relation.send                              :include, QueryMethods
-      ::ActiveRecord::Relation.send                              :include, Calculations
+      ::ActiveRecord::Relation.send                              :prepend, QueryMethods
+      ::ActiveRecord::Relation.send                              :prepend, Calculations
       ::ActiveRecord::ConnectionAdapters::PostgreSQLAdapter.send :prepend, ConnectionAdapters::PostgreSQL::Adapter
       ::ActiveRecord::ConnectionAdapters::PostgreSQLAdapter.send :prepend, ConnectionAdapters::PostgreSQL::SchemaStatements
       ::ActiveRecord::SchemaDumper.send                          :prepend, SchemaDumper
