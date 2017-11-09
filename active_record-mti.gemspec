@@ -10,7 +10,7 @@ Gem::Specification.new do |spec|
   spec.email         = ["dale@twilightcoders.net"]
 
   spec.summary       = %q{Multi Table Inheritance for PostgreSQL in Rails}
-  spec.description   = %q{Allows use of native inherited tables in PostgreSQL}
+  spec.description   = %q{Gives ActiveRecord support for PostgreSQL's native inherited tables}
   spec.homepage      = "https://github.com/twilightcoders/active_record-mti"
   spec.license       = "MIT"
 

@@ -5,9 +5,11 @@
 
 # ActiveRecord::MTI
 
-Allows for true native inheritance of tables in PostgreSQL
+ActiveRecord support for PostgreSQL's native inherited tables (multi-table inheritance)
 
-Currently requires Rails 4.2
+Compatible with ActiveRecord `4.0`, `4.1`, `4.2`, `5.0`, `5.1`
+
+Confirmed production use in `4.2`
 
 ## Usage
 
@@ -25,6 +27,11 @@ Or install it yourself as:
 
 ### Application Code
 
+ActiveRecord queries work as usual with the following differences:
+
+* You need to specify which model represents the base of your multi table inheritance tree. To do so, add `uses_mti` to the model definition of the base class.
+* The default query of "*" is changed to include the OID of each row for subclass discrimination. The default select will be `SELECT "accounts"."tableoid" AS tableoid, "accounts".*` (for example)
+
 ```ruby
 class Account < ::ActiveRecord::Base
   uses_mti
@@ -39,11 +46,6 @@ class Developer < Account
 
 end
 ```
-
-ActiveRecord queries work as usual with the following differences:
-
-* You need to specify which model represents the base of your multi table inheritance tree. To do so, insert `uses_mti` in the model definition of the base class.
-* The default query of "*" is changed to include the OID of each row for subclass discrimination. The default select will be `SELECT cast("accounts"."tableoid"::regclass AS text), "accounts".*` (for example)
 
 ### Migrations
 
