@@ -5,9 +5,9 @@ module ActiveRecord
   module MTI
     module Inheritance
       extend ActiveSupport::Concern
-      @mti_tableoids = {}
 
       included do
+        @@mti_tableoids = {}
         scope :discern_inheritance, -> {
 
         }
@@ -171,11 +171,11 @@ module ActiveRecord
       end
 
       def self.add_mti(tableoid, klass)
-        @mti_tableoids[tableoid.to_s.to_sym] = klass
+        @@mti_tableoids[tableoid.to_s.to_sym] = klass
       end
 
       def self.find_mti(tableoid)
-        @mti_tableoids[tableoid.to_s.to_sym]
+        @@mti_tableoids[tableoid.to_s.to_sym]
       end
 
     end
