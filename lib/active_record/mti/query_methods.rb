@@ -2,8 +2,6 @@ module ActiveRecord
   module MTI
     module QueryMethods
 
-      private
-
       def build_arel
         arel = Arel::SelectManager.new(table.engine, table)
 
@@ -29,6 +27,8 @@ module ActiveRecord
 
         arel
       end
+
+      private
 
       # Retrieve the OID as well on a default select
       def build_mti(arel)
