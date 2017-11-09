@@ -2,30 +2,58 @@ module ActiveRecord
   module MTI
     module QueryMethods
 
-      def build_arel
-        arel = Arel::SelectManager.new(table.engine, table)
+      if ::ActiveRecord.version >= Gem::Version.new('5.0')
+        def build_arel
+          arel = Arel::SelectManager.new(table)
 
-        build_joins(arel, joins_values.flatten) unless joins_values.empty?
+          build_joins(arel, joins_values.flatten) unless joins_values.empty?
+          build_left_outer_joins(arel, left_outer_joins_values.flatten) unless left_outer_joins_values.empty?
 
-        collapse_wheres(arel, (where_values - [''])) #TODO: Add uniq with real value comparison / ignore uniqs that have binds
+          arel.where(where_clause.ast) unless where_clause.empty?
+          arel.having(having_clause.ast) unless having_clause.empty?
 
-        arel.having(*having_values.uniq.reject(&:blank?)) unless having_values.empty?
+          build_mti(arel)
 
-        build_mti(arel)
+          arel.take(Arel::Nodes::BindParam.new) if limit_value
+          arel.skip(Arel::Nodes::BindParam.new) if offset_value
+          arel.group(*arel_columns(group_values.uniq.reject(&:blank?))) unless group_values.empty?
 
-        arel.take(connection.sanitize_limit(limit_value)) if limit_value
-        arel.skip(offset_value.to_i) if offset_value
-        arel.group(*arel_columns(group_values.uniq.reject(&:blank?))) unless group_values.empty?
+          build_order(arel)
 
-        build_order(arel)
+          build_select(arel)
 
-        build_select(arel)
+          arel.distinct(distinct_value)
+          arel.from(build_from) unless from_clause.empty?
+          arel.lock(lock_value) if lock_value
 
-        arel.distinct(distinct_value)
-        arel.from(build_from) if from_value
-        arel.lock(lock_value) if lock_value
+          arel
+        end
+      else
+        def build_arel
+          arel = Arel::SelectManager.new(table.engine, table)
 
-        arel
+          build_joins(arel, joins_values.flatten) unless joins_values.empty?
+
+          collapse_wheres(arel, (where_values - [''])) #TODO: Add uniq with real value comparison / ignore uniqs that have binds
+
+          arel.having(*having_values.uniq.reject(&:blank?)) unless having_values.empty?
+
+          build_mti(arel)
+
+          arel.take(connection.sanitize_limit(limit_value)) if limit_value
+          arel.skip(offset_value.to_i) if offset_value
+          arel.group(*arel_columns(group_values.uniq.reject(&:blank?))) unless group_values.empty?
+
+          build_order(arel)
+
+          build_select(arel)
+
+          arel.distinct(distinct_value)
+          arel.from(build_from) if from_value
+          arel.lock(lock_value) if lock_value
+
+          arel
+        end
       end
 
       private

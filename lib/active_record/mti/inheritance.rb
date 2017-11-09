@@ -149,12 +149,18 @@ module ActiveRecord
           end
         end
 
+
         # Rails decided to make a breaking change in it's 4.x series :P
         def get_integer_oid_class
           ::ActiveRecord::ConnectionAdapters::PostgreSQL::OID::Integer
         rescue NameError
-          ::ActiveRecord::ConnectionAdapters::PostgreSQLAdapter::OID::Integer
+          begin
+            ::ActiveRecord::ConnectionAdapters::PostgreSQLAdapter::OID::Integer
+          rescue NameError
+            ::ActiveModel::Type::Integer
+          end
         end
+
       end
 
       def self.add_mti(tableoid, klass)
