@@ -104,7 +104,7 @@ module ActiveRecord
 
           if (has_tableoid_column?)
             ActiveRecord::MTI.logger.debug "#{table_name} has tableoid column! (#{tableoid})"
-            self.attribute :tableoid, ActiveRecord::ConnectionAdapters::PostgreSQL::OID::Integer.new
+            self.attribute :tableoid, get_integer_oid_class.new
             @mti_type_column = arel_table[:tableoid]
           else
             @mti_type_column = nil
@@ -147,6 +147,13 @@ module ActiveRecord
 
             sti_column.in(sti_names)
           end
+        end
+
+        # Rails decided to make a breaking change in it's 4.x series :P
+        def get_integer_oid_class
+          ::ActiveRecord::ConnectionAdapters::PostgreSQL::OID::Integer
+        rescue NameError
+          ::ActiveRecord::ConnectionAdapters::PostgreSQLAdapter::OID::Integer
         end
       end
 
