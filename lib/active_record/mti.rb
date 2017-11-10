@@ -40,7 +40,7 @@ module ActiveRecord
     end
 
     def self.testify(value)
-      value || value == 't' || value == 1 || value == '1'
+      value == true || value == 't' || value == 1 || value == '1'
     end
 
   end
