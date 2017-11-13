@@ -1,7 +1,5 @@
 require 'spec_helper'
 
-require 'pry'
-
 describe ActiveRecord::MTI::Inheritance do
 
   xit 'returns non-nil value when checking uses_mti?' do
