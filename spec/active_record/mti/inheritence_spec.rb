@@ -76,7 +76,6 @@ describe ActiveRecord::MTI::Inheritance do
     end
   end
 
-
   describe 'views' do
     before(:each) do
       class UserView < User
