@@ -1,7 +1,5 @@
 require 'spec_helper'
 
-require 'pry'
-
 describe ActiveRecord::MTI::Calculations do
 
   context "don't project tableoid on" do
