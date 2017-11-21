@@ -27,26 +27,27 @@ Or install it yourself as:
 
 ### Application Code
 
-ActiveRecord queries work as usual with the following differences:
-
-* You need to specify which model represents the base of your multi table inheritance tree. To do so, add `uses_mti` to the model definition of the base class.
-* The default query of "*" is changed to include the OID of each row for subclass discrimination. The default select will be `SELECT "accounts"."tableoid" AS tableoid, "accounts".*` (for example)
+In most cases, you shouldn't have to do anything beyond installing the gem. `ActiveRecord::MTI` will do it's best to determine the nature of inheritance in your models. If your models map to their own tables, `ActiveRecord::MTI` will step in and make sure inheritance is treated appropriately. Otherwise it will gracefully aquiece to `ActiveRecord`'s built-in `STI`.
 
 ```ruby
 class Account < ::ActiveRecord::Base
-  uses_mti
-
+  # ...
 end
 
 class User < Account
-
+  # ...
 end
 
 class Developer < Account
-
+  # ...
 end
 ```
 
+`ActiveRecord` queries work as usual with the following differences:
+
+- The default query of "\*" is changed to include the OID of each row for subclass discrimination. The default select will be `SELECT "accounts"."tableoid" AS tableoid, "accounts".*` (for example)
+
+Note
 ### Migrations
 
 In your migrations define a table to inherit from another table:
