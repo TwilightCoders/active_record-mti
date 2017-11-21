@@ -12,7 +12,6 @@ class Post < ::ActiveRecord::Base
 end
 
 class User < ::ActiveRecord::Base
-  uses_mti
 
   has_many :posts
   has_many :comments
@@ -25,7 +24,6 @@ end
 
 module Transportation
   class Vehicle < ::ActiveRecord::Base
-    uses_mti
   end
 
   class Truck < Vehicle
