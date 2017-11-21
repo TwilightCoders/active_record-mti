@@ -1,7 +1,12 @@
 require 'active_record/mti/version'
+
 require 'active_record'
 require 'active_record/connection_handling'
+
+require 'core_ext/hash'
+
 require 'active_record/mti/schema_dumper'
+require 'active_record/mti/registry'
 require 'active_record/mti/inheritance'
 require 'active_record/mti/model_schema'
 require 'active_record/mti/query_methods'
@@ -41,8 +46,8 @@ module ActiveRecord
     end
 
     def self.load
-      ::ActiveRecord::Base.send                                  :include, Inheritance
-      ::ActiveRecord::Base.send                                  :include, ModelSchema
+      ::ActiveRecord::Base.send                                  :prepend, ModelSchema
+      ::ActiveRecord::Base.send                                  :prepend, Inheritance
       ::ActiveRecord::Relation.send                              :prepend, QueryMethods
       ::ActiveRecord::Relation.send                              :prepend, Calculations
       ::ActiveRecord::ConnectionAdapters::PostgreSQLAdapter.send :prepend, ConnectionAdapters::PostgreSQL::Adapter
