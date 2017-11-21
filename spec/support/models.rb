@@ -29,4 +29,10 @@ module Transportation
   class Truck < Vehicle
     self.table_name = 'vehicles/trucks'
   end
+
+  module Military
+    class Vehicle < ::Transportation::Vehicle
+      self.inheritance_column = 'type'
+    end
+  end
 end
