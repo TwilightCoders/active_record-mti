@@ -151,23 +151,11 @@ module ActiveRecord
 
         def add_tableoid_column
           if self.respond_to? :attribute
-            self.attribute :tableoid, get_integer_oid_class.new
+            self.attribute :tableoid, ActiveRecord::MTI.oid_class.new
           else
-            columns.unshift ActiveRecord::ConnectionAdapters::PostgreSQLColumn.new('tableoid', nil, ActiveRecord::ConnectionAdapters::PostgreSQLAdapter::OID::Integer.new, "oid", false)
+            columns.unshift ActiveRecord::ConnectionAdapters::PostgreSQLColumn.new('tableoid', nil, ActiveRecord::MTI.oid_class.new, "oid", false)
           end
         end
-
-        # Rails decided to make a breaking change in it's 4.x series :P
-        def get_integer_oid_class
-          ::ActiveRecord::ConnectionAdapters::PostgreSQL::OID::Integer
-        rescue NameError
-          begin
-            ::ActiveRecord::ConnectionAdapters::PostgreSQLAdapter::OID::Integer
-          rescue NameError
-            ::ActiveModel::Type::Integer
-          end
-        end
-
       end
 
       def self.add_mti(tableoid, klass)

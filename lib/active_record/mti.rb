@@ -14,6 +14,17 @@ require 'active_record/mti/railtie' if defined?(Rails::Railtie)
 module ActiveRecord
   module MTI
 
+    # Rails likes to make breaking changes in it's minor versions (like 4.1 - 4.2) :P
+    cattr_reader :oid_class do
+      [
+        '::ActiveRecord::ConnectionAdapters::PostgreSQLAdapter::OID::Integer', # 4.0, 4.1
+        '::ActiveRecord::ConnectionAdapters::PostgreSQL::OID::Integer', # 4.2
+        '::ActiveRecord::Type::Integer' # 5.0, 5.1
+      ].find { |klass|
+        Object.const_defined?(klass)
+      }.constantize
+    end
+
     class << self
       attr_writer :logger
 
