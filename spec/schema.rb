@@ -7,7 +7,7 @@ ActiveRecord::Schema.define do
   end
 
   create_table :admins, force: true, inherits: :users do |t|
-    t.integer :god_powers
+    t.integer :god_powers, index: :btree
   end
 
   create_table 'admin/hackers', force: true, inherits: :admins do |t|
