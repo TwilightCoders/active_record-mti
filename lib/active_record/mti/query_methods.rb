@@ -35,8 +35,6 @@ module ActiveRecord
       end
 
       def tableoid_project(klass)
-        # Arel::Nodes::NamedFunction.new('CAST', [klass.arel_table[:tableoid].as('regclass')])
-        # Arel::Nodes::NamedFunction.new('CAST', [@klass.arel_table['tableoid::regclass'].as('regclass')])
         klass.mti_type_column.as('tableoid')
       end
 
