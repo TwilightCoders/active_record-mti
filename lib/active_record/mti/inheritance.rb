@@ -1,152 +1,115 @@
-require 'active_support/concern'
-
 module ActiveRecord
   # == Multi-Table Inheritance
   module MTI
     module Inheritance
-      extend ActiveSupport::Concern
 
-      included do
-        @@mti_tableoids = {}
-        scope :discern_inheritance, -> {
-
-        }
+      def self.prepended(subclass)
+        subclass.extend(ClassMethods)
+        class << subclass
+          class_attribute :mti_type_column
+          class_attribute :tableoid_column
+        end
       end
 
       module ClassMethods
-
-        @uses_mti = nil
-        @mti_setup = false
-        @mti_type_column = nil
-
-        def uses_mti(custom_table_name = nil, inheritance_column = nil)
-          self.inheritance_column = inheritance_column
-
-          @uses_mti = true
-          @tableoid_column = nil
+        def has_tableoid_column?
+          tableoid_column != false
         end
 
-        def using_multi_table_inheritance?(klass = self)
-          klass.uses_mti?
+        def inherited(subclass)
+          super
+          subclass.using_multi_table_inheritance?
         end
 
-        def uses_mti?
-          inheritance_check = check_inheritance_of(@table_name) unless @mti_setup
+        def uses_mti(*args)
+          # self.inheritance_column = nil
+        end
 
-          if @uses_mti.nil? && @uses_mti = inheritance_check
-            descendants.each do |d|
-              d.uses_mti?
+        def using_multi_table_inheritance?
+          mti = ActiveRecord::MTI::Registry.tableoid?(self)
+          return (mti != false) unless mti == nil
+
+          if (mti = check_inheritance_of(@table_name))
+            if (self != base_class && self.table_name == base_class.table_name)
+              mti = false
+            else
+              mti = detect_tableoid(table_name)
             end
           end
 
-          @uses_mti
-        end
+          ActiveRecord::MTI::Registry[self] = mti
 
-        def has_tableoid_column?
-          @tableoid_column != false
-        end
+          descendants.each do |d|
+            d.using_multi_table_inheritance?
+          end
 
-        def mti_type_column
-          @mti_type_column
-        end
-
-        def mti_type_column=(value)
-          @mti_type_column = value
+          return mti && mti != false
         end
 
         private
 
-        def check_inheritance_of(table_name)
-          ActiveRecord::MTI.logger.debug "Trying to check inheritance of table with no table name (#{self})" unless table_name
-          return nil unless table_name
-
-          ActiveRecord::MTI.logger.debug "Checking inheritance for #{table_name}"
+        def check_inheritance_of(table_name, table_schema = 'public')
+          ActiveRecord::MTI.logger.debug("Trying to check inheritance of table with no table name (#{self})") and return nil unless table_name
+          ActiveRecord::MTI.logger.debug "Checking inheritance for #{table_schema}.#{table_name}"
 
           result = connection.execute <<-SQL
             SELECT EXISTS (
               SELECT 1
-              FROM      pg_catalog.pg_inherits AS i
-              LEFT JOIN pg_catalog.pg_rewrite  AS r    ON r.ev_class = 'public.#{table_name}'::regclass::oid
-              LEFT JOIN pg_catalog.pg_depend   AS d    ON d.objid    = r.oid
-              LEFT JOIN pg_catalog.pg_class    AS cl_d ON cl_d.oid   = d.refobjid
-              WHERE inhrelid  = COALESCE(cl_d.relname, 'public.#{table_name}')::regclass::oid
-              OR    inhparent = COALESCE(cl_d.relname, 'public.#{table_name}')::regclass::oid
+                FROM pg_catalog.pg_inherits       AS i
+                  JOIN information_schema.tables  AS t ON t.table_schema = '#{table_schema}' AND t.table_name = '#{table_name}'
+                  LEFT JOIN pg_catalog.pg_rewrite AS r ON r.ev_class     = t.table_name::regclass::oid
+                  LEFT JOIN pg_catalog.pg_depend  AS d ON d.objid        = r.oid
+                  LEFT JOIN pg_catalog.pg_class   AS c ON c.oid          = d.refobjid
+                WHERE i.inhrelid  = COALESCE(c.relname, t.table_name)::regclass::oid
+                  OR i.inhparent = COALESCE(c.relname, t.table_name)::regclass::oid
             ) AS uses_inheritance;
           SQL
 
-          uses_inheritance = ActiveRecord::MTI.testify(result.try(:first)['uses_inheritance'])
-
-          register_tableoid(table_name) if uses_inheritance
-
-          @mti_setup = true
-          # Some versions of PSQL return {"?column?"=>"t"}
-          # instead of {"exists"=>"t"}, so we're saying screw it,
-          # just give me the first value of whatever is returned
-
-          # Ensure a boolean is returned
-          return uses_inheritance == true
+          return ActiveRecord::MTI.testify(result.try(:first)['uses_inheritance']) == true
         end
 
-        def register_tableoid(table_name)
+        def detect_tableoid(table_name, table_schema = 'public')
 
           tableoid_query = connection.execute(<<-SQL
-            SELECT '#{table_name}'::regclass::oid AS tableoid, (SELECT EXISTS (
-              SELECT 1
+            SELECT 1 AS has_tableoid_column, t.table_name::regclass::oid as tableoid
               FROM   pg_catalog.pg_attribute
-              WHERE  attrelid = '#{table_name}'::regclass
+              JOIN   information_schema.tables t ON t.table_schema = '#{table_schema}' AND t.table_name = '#{table_name}'
+              WHERE  attrelid = t.table_name::regclass
               AND    attname  = 'tableoid'
-              AND    NOT attisdropped
-            )) AS has_tableoid_column
+              AND    NOT attisdropped;
           SQL
           ).first
-          tableoid = tableoid_query['tableoid']
-          @tableoid_column = ActiveRecord::MTI.testify(tableoid_query['has_tableoid_column'])
+
+          tableoid = tableoid_query.try(:[], 'tableoid') || false
+          self.tableoid_column = ActiveRecord::MTI.testify(tableoid_query.try(:[], 'has_tableoid_column'))
 
           if (has_tableoid_column?)
-            ActiveRecord::MTI.logger.debug "#{table_name} has tableoid column! (#{tableoid})"
+            ActiveRecord::MTI.logger.debug "#{table_schema}.#{table_name} has tableoid column! (#{tableoid})"
             add_tableoid_column
-            @mti_type_column = arel_table[:tableoid]
+            self.mti_type_column = arel_table[:tableoid]
           else
-            @mti_type_column = nil
+            self.mti_type_column = nil
           end
 
-          Inheritance.add_mti(tableoid, self)
+          tableoid
         end
 
         # Called by +instantiate+ to decide which class to use for a new
         # record instance. For single-table inheritance, we check the record
         # for a +type+ column and return the corresponding class.
         def discriminate_class_for_record(record)
-          if using_multi_table_inheritance?(base_class)
-            find_mti_class(record) || base_class
-          elsif using_single_table_inheritance?(record)
-            find_sti_class(record[inheritance_column])
+          if using_multi_table_inheritance?
+            ActiveRecord::MTI::Registry.find_mti_class(record['tableoid']) || self
           else
             super
-          end
-        end
-
-        # Search descendants for one who's table_name is equal to the returned tableoid.
-        # This indicates the class of the record
-        def find_mti_class(record)
-          if (has_tableoid_column?)
-            Inheritance.find_mti(record['tableoid'])
-          else
-            self
           end
         end
 
         # Type condition only applies if it's STI, otherwise it's
         # done for free by querying the inherited table in MTI
         def type_condition(table = arel_table)
-          if using_multi_table_inheritance?
-            nil
-          else
-            sti_column = table[inheritance_column]
-            sti_names  = ([self] + descendants).map { |model| model.sti_name }
-
-            sti_column.in(sti_names)
-          end
+          return nil if using_multi_table_inheritance?
+          super
         end
 
         def add_tableoid_column
@@ -157,15 +120,6 @@ module ActiveRecord
           end
         end
       end
-
-      def self.add_mti(tableoid, klass)
-        @@mti_tableoids[tableoid.to_s.to_sym] = klass
-      end
-
-      def self.find_mti(tableoid)
-        @@mti_tableoids[tableoid.to_s.to_sym]
-      end
-
     end
   end
 end
