@@ -20,8 +20,8 @@ module ActiveRecord
 
       def tableoid?(klass)
         !Thread.current['skip_tableoid_cast'] &&
-        @klass.using_multi_table_inheritance? &&
-        @klass.has_tableoid_column?
+        klass.using_multi_table_inheritance? &&
+        klass.has_tableoid_column?
       end
 
       def tableoid_project?(klass)
@@ -37,11 +37,11 @@ module ActiveRecord
       def tableoid_project(klass)
         # Arel::Nodes::NamedFunction.new('CAST', [klass.arel_table[:tableoid].as('regclass')])
         # Arel::Nodes::NamedFunction.new('CAST', [@klass.arel_table['tableoid::regclass'].as('regclass')])
-        @klass.mti_type_column.as('tableoid')
+        klass.mti_type_column.as('tableoid')
       end
 
       def tableoid_group(klass)
-        @klass.mti_type_column
+        klass.mti_type_column
       end
 
     end
