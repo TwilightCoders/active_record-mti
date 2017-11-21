@@ -1,35 +1,15 @@
 module ActiveRecord
   module MTI
     module ModelSchema
-      extend ActiveSupport::Concern
 
+      def self.prepended(base)
+        base.extend(ClassMethods)
+      end
 
       module ClassMethods
-
-        # Computes the table name, (re)sets it internally, and returns it.
-        def reset_table_name #:nodoc:
-          self.table_name = if abstract_class?
-            superclass == Base ? nil : superclass.table_name
-          elsif superclass.abstract_class?# || superclass.using_multi_table_inheritance?
-            superclass.table_name || compute_table_name
-          else
-            compute_table_name
-          end
-        end
-
         # Computes and returns a table name according to default conventions.
         def compute_table_name
-          base = base_class
-          if self == base
-            # Nested classes are prefixed with singular parent table name.
-            if parent < Base && !parent.abstract_class?
-              contained = parent.table_name
-              contained = contained.singularize if parent.pluralize_table_names
-              contained += '_'
-            end
-
-            "#{full_table_name_prefix}#{contained}#{undecorated_table_name(name)}#{full_table_name_suffix}"
-          elsif uses_mti?
+          if self != base_class
             # Nested classes are prefixed with singular parent table name.
             if superclass < Base && !superclass.abstract_class?
               contained = superclass.table_name
@@ -37,18 +17,27 @@ module ActiveRecord
               contained += '/'
             end
 
-            "#{full_table_name_prefix}#{contained}#{decorated_table_name(name)}#{full_table_name_suffix}"
+            potential_table_name = "#{full_table_name_prefix}#{contained}#{decorated_table_name(name)}#{full_table_name_suffix}"
+
+            if check_inheritance_of(potential_table_name)
+              potential_table_name
+            else
+              superclass.table_name
+            end
           else
-            # STI subclasses always use their superclass' table.
-            superclass.table_name
+            super
           end
         end
 
         def full_table_name_prefix #:nodoc:
+          super
+        rescue NoMethodError => e
           (parents.detect{ |p| p.respond_to?(:table_name_prefix) } || self).table_name_prefix
         end
 
         def full_table_name_suffix #:nodoc:
+          super
+        rescue NoMethodError => e
           (parents.detect {|p| p.respond_to?(:table_name_suffix) } || self).table_name_suffix
         end
 
@@ -56,11 +45,13 @@ module ActiveRecord
 
         # Guesses the table name, but does not decorate it with prefix and suffix information.
         def decorated_table_name(class_name = base_class.name)
+          super
+        rescue NoMethodError => e
           table_name = class_name.to_s.underscore
           pluralize_table_names ? table_name.pluralize : table_name
         end
-
       end
+
     end
   end
 end
