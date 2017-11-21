@@ -1,5 +1,7 @@
 require 'active_record/mti/version'
 
+require 'active_support/all'
+
 require 'active_record'
 require 'active_record/connection_handling'
 
@@ -20,7 +22,10 @@ module ActiveRecord
   module MTI
 
     # Rails likes to make breaking changes in it's minor versions (like 4.1 - 4.2) :P
-    cattr_reader :oid_class do
+    mattr_accessor :oid_class
+
+    # Cannot assign default inside block because of rails 4.0
+    self.oid_class =
       [
         '::ActiveRecord::ConnectionAdapters::PostgreSQLAdapter::OID::Integer', # 4.0, 4.1
         '::ActiveRecord::ConnectionAdapters::PostgreSQL::OID::Integer', # 4.2
@@ -28,7 +33,6 @@ module ActiveRecord
       ].find { |klass|
         Object.const_defined?(klass)
       }.constantize
-    end
 
     class << self
       attr_writer :logger

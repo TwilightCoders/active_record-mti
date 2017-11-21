@@ -1,5 +1,3 @@
-require 'active_support/concern'
-
 module ActiveRecord
   # == Multi-Table ActiveRecord::MTI
   module MTI
@@ -20,10 +18,8 @@ module ActiveRecord
 
       private
 
-      cattr_accessor :tableoids do
-        { ActiveRecord::Base => false }
-      end
-
+      mattr_accessor :tableoids
+      self.tableoids = { ActiveRecord::Base => false }
     end
   end
 end
