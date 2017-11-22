@@ -29,12 +29,6 @@ module ActiveRecord
           end
         end
 
-        def full_table_name_prefix #:nodoc:
-          super
-        rescue NoMethodError
-          full_table_name_rescue(:table_name_prefix)
-        end
-
         def full_table_name_suffix #:nodoc:
           super
         rescue NoMethodError
