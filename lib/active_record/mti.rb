@@ -30,8 +30,13 @@ module ActiveRecord
         '::ActiveRecord::ConnectionAdapters::PostgreSQLAdapter::OID::Integer', # 4.0, 4.1
         '::ActiveRecord::ConnectionAdapters::PostgreSQL::OID::Integer', # 4.2
         '::ActiveRecord::Type::Integer' # 5.0, 5.1
-      ].find { |klass|
-        Object.const_defined?(klass)
+      ].find(nil) { |klass|
+        begin
+          klass.constantize
+          true
+        rescue NameError
+          false
+        end
       }.constantize
 
     class << self
