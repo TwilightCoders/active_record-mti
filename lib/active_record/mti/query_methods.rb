@@ -24,16 +24,6 @@ module ActiveRecord
         klass.has_tableoid_column?
       end
 
-      def tableoid_project?(klass)
-        tableoid?(klass) &&
-        (group_values - [:tableoid]).any?
-      end
-
-      def tableoid_group?(klass)
-        tableoid?(klass) &&
-        group_values.any?
-      end
-
       def tableoid_project(klass)
         klass.mti_type_column.as('tableoid')
       end
