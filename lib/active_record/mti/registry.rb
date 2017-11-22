@@ -4,7 +4,7 @@ module ActiveRecord
     module Registry
 
       def self.[]=(klass, tableoid)
-        ActiveRecord::MTI.logger.debug "Adding #{klass} to MTI list with #{tableoid.to_s}"
+        ActiveRecord::MTI.logger.debug "Adding #{klass} to MTI list with #{tableoid}"
         tableoids[klass] = tableoid
       end
 

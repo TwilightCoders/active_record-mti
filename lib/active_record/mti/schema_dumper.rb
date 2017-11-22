@@ -24,7 +24,7 @@ module ActiveRecord
         super(table, new_stream)
         string = new_stream.string
 
-        if parent_table = @connection.parent_table(table)
+        if (parent_table = @connection.parent_table(table))
           table(parent_table, stream)
           string = inject_inherits_for_create_table(string, table, parent_table)
           string = remove_parent_table_columns(string, @connection.columns(parent_table))
@@ -46,7 +46,7 @@ module ActiveRecord
         tbl_start = "create_table #{remove_prefix_and_suffix(table).inspect}"
         tbl_end = " do |t|"
         tbl_inherit = ", inherits: '#{parent_table}'"
-        string.gsub!(/#{Regexp.escape(tbl_start)}.*#{Regexp.escape(tbl_end)}/, "#{tbl_start}, inherits: '#{parent_table}'#{tbl_end}")
+        string.gsub!(/#{Regexp.escape(tbl_start)}.*#{Regexp.escape(tbl_end)}/, tbl_start + tbl_inherit + tbl_end)
       end
 
       def remove_parent_table_columns(string, columns)

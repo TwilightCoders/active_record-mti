@@ -21,13 +21,13 @@ module ActiveRecord
               options.delete(:primary_key)
             end
 
-            if schema = options.delete(:schema)
+            if (schema = options.delete(:schema))
               # If we specify a schema then we only create it if it doesn't exist
               # and we only force create it if only the specific schema is in the search path
               table_name = %Q("#{schema}"."#{table_name}")
             end
 
-            if inherited_table = options.delete(:inherits)
+            if (inherited_table = options.delete(:inherits))
               # options[:options] = options[:options].sub("INHERITS", "() INHERITS") if td.columns.empty?
               options[:options] = [%Q(INHERITS ("#{inherited_table}")), options[:options]].compact.join
             end

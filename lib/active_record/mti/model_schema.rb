@@ -31,22 +31,26 @@ module ActiveRecord
 
         def full_table_name_prefix #:nodoc:
           super
-        rescue NoMethodError => e
-          (parents.detect{ |p| p.respond_to?(:table_name_prefix) } || self).table_name_prefix
+        rescue NoMethodError
+          full_table_name_rescue(:table_name_prefix)
         end
 
         def full_table_name_suffix #:nodoc:
           super
-        rescue NoMethodError => e
-          (parents.detect {|p| p.respond_to?(:table_name_suffix) } || self).table_name_suffix
+        rescue NoMethodError
+          full_table_name_rescue(:table_name_suffix)
         end
 
         private
 
+        def full_table_name_rescue(which)
+          (parents.detect{ |p| p.respond_to?(which) } || self).send(which)
+        end
+
         # Guesses the table name, but does not decorate it with prefix and suffix information.
         def decorated_table_name(class_name = base_class.name)
           super
-        rescue NoMethodError => e
+        rescue NoMethodError
           table_name = class_name.to_s.underscore
           pluralize_table_names ? table_name.pluralize : table_name
         end
