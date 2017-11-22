@@ -1,7 +1,7 @@
 ActiveRecord::Schema.define do
   self.verbose = false
 
-  create_table :users, force: true do |t|
+  create_table :users, schema: :public, force: true do |t|
     t.string :email, index: :btree
     t.timestamps null: false
   end
