@@ -29,8 +29,8 @@ module ActiveRecord
           string = inject_inherits_for_create_table(string, table, parent_table)
           string = remove_parent_table_columns(string, @connection.columns(parent_table))
 
-          pindexes = @connection.indexes(parent_table).map { |index| [index.columns, index] }.to_h
-          cindexes = @connection.indexes(table).map { |index| [index.columns, index] }.to_h
+          pindexes = Hash[@connection.indexes(parent_table).map { |index| [index.columns, index] }]
+          cindexes = Hash[@connection.indexes(table).map { |index| [index.columns, index] }]
 
           string = remove_parent_table_indexes(string, (pindexes & cindexes).values)
         end
