@@ -25,7 +25,7 @@ ActiveRecord::Base.establish_connection db_config
 
 load File.dirname(__FILE__) + '/schema.rb'
 
-Dir[File.join(File.dirname(__FILE__), '..', 'spec', 'support', '**', '**.rb')].each do |f|
+Dir[ActiveRecord::MTI.root.join('spec', 'support', '**', '**.rb')].each do |f|
   require f
 end
 
