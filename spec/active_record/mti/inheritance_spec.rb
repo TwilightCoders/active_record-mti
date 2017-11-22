@@ -2,9 +2,12 @@ require 'spec_helper'
 
 describe ActiveRecord::MTI::Inheritance do
 
-  xit 'returns non-nil value when checking uses_mti?' do
-    # Mod = Class.new(User)
-    # expect(Mod.uses_mti?).to be(true)
+  it "creates a column even if class doesn't respond to :attribute" do
+    allow(Admin).to receive(:respond_to?).with(:attribute).and_return(false)
+
+    ActiveRecord::MTI::Registry.tableoids[Admin] = nil
+
+    expect(Admin.using_multi_table_inheritance?).to eq(true)
   end
 
   context 'class definition' do
