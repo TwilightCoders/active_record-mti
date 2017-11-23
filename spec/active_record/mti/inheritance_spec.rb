@@ -93,14 +93,16 @@ describe ActiveRecord::MTI::Inheritance do
 
   describe 'views' do
     before(:each) do
+
+      User.connection.execute <<-SQL
+        CREATE OR REPLACE VIEW "users_all"
+        AS SELECT * FROM "users"
+      SQL
+
       class UserView < User
         self.table_name = "users_all"
       end
 
-      UserView.connection.execute <<-SQL
-        CREATE OR REPLACE VIEW "users_all"
-        AS #{ User.all.to_sql }
-      SQL
     end
 
     if ActiveRecord::Base.connection.version >= Gem::Version.new('9.4')
