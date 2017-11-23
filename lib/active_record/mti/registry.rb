@@ -3,6 +3,9 @@ module ActiveRecord
   module MTI
     module Registry
 
+      mattr_accessor :tableoids
+      self.tableoids = { ActiveRecord::Base => false }
+
       def self.[]=(klass, tableoid)
         ActiveRecord::MTI.logger.debug "Adding #{klass} to MTI list with #{tableoid}"
         tableoids[klass] = tableoid
@@ -16,10 +19,6 @@ module ActiveRecord
         tableoids[klass]
       end
 
-      private
-
-      mattr_accessor :tableoids
-      self.tableoids = { ActiveRecord::Base => false }
     end
   end
 end
