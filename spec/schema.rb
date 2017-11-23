@@ -2,12 +2,12 @@ ActiveRecord::Schema.define do
   self.verbose = false
 
   create_table :users, force: true do |t|
-    t.string :email
+    t.string :email, index: :btree
     t.timestamps null: false
   end
 
   create_table :admins, force: true, inherits: :users do |t|
-    t.integer :god_powers, index: :btree
+    t.integer :god_powers
   end
 
   create_table 'admin/hackers', force: true, inherits: :admins do |t|
