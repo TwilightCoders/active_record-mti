@@ -10,6 +10,10 @@ describe ActiveRecord::MTI do
       end
     end
 
+    it "root has the right value" do
+      expect(ActiveRecord::MTI.root).not_to be_nil
+    end
+
   end
 
 end
