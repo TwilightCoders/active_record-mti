@@ -1,5 +1,4 @@
 module ActiveRecord
-  # == Multi-Table ActiveRecord::MTI
   module MTI
     module Registry
 
