@@ -24,21 +24,6 @@ module ActiveRecord
     # Rails likes to make breaking changes in it's minor versions (like 4.1 - 4.2) :P
     mattr_accessor :oid_class
 
-    # Cannot assign default inside block because of rails 4.0
-    self.oid_class =
-      [
-        '::ActiveRecord::ConnectionAdapters::PostgreSQLAdapter::OID::Integer', # 4.0, 4.1
-        '::ActiveRecord::ConnectionAdapters::PostgreSQL::OID::Integer', # 4.2
-        '::ActiveRecord::Type::Integer' # 5.0, 5.1
-      ].find(nil) { |klass|
-        begin
-          klass.constantize
-          true
-        rescue NameError
-          false
-        end
-      }.constantize
-
     class << self
       attr_writer :logger
 
@@ -67,6 +52,30 @@ module ActiveRecord
     def self.testify(value)
       value == true || value == 't' || value == 1 || value == '1'
     end
+
+    private
+
+    mattr_accessor :oid_class_candidates
+
+    # Cannot assign default inside block because of rails 4.0
+    self.oid_class_candidates = [
+      '::ActiveRecord::ConnectionAdapters::PostgreSQLAdapter::OID::Integer', # 4.0, 4.1
+      '::ActiveRecord::ConnectionAdapters::PostgreSQL::OID::Integer', # 4.2
+      '::ActiveRecord::Type::Integer' # 5.0, 5.1
+    ]
+
+    def self.find_oid_class
+      oid_class_candidates.find(nil) { |klass|
+        begin
+          klass.constantize
+          true
+        rescue NameError
+          false
+        end
+      }.constantize
+    end
+
+    self.oid_class = self.find_oid_class
 
   end
 end
