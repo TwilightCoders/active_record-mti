@@ -22,7 +22,7 @@ module ActiveRecord
         end
 
         def uses_mti(*args)
-          # self.inheritance_column = nil
+          warn "DEPRECATED - `uses_mti` is no longer needed (nor has any effect)"
         end
 
         def using_multi_table_inheritance?
