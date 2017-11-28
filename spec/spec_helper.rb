@@ -1,6 +1,7 @@
 ENV['RAILS_ENV'] = 'test'
 
 require 'database_cleaner'
+require 'combustion'
 
 require 'simplecov'
 SimpleCov.start do
@@ -10,24 +11,8 @@ end
 
 require 'active_record/mti'
 
-ActiveRecord::MTI.load
-
-db_config = {
-  adapter: 'postgresql', database: 'active_record-mti-test'
-}
-
-db_config_admin = db_config.merge({ database: 'postgres', schema_search_path: 'public' })
-
-ActiveRecord::Base.establish_connection db_config_admin
-ActiveRecord::Base.connection.drop_database(db_config[:database])
-ActiveRecord::Base.connection.create_database(db_config[:database])
-ActiveRecord::Base.establish_connection db_config
-
-load File.dirname(__FILE__) + '/schema.rb'
-
-Dir[ActiveRecord::MTI.root.join('spec', 'support', '**', '**.rb')].each do |f|
-  require f
-end
+Combustion.path = 'spec/support/rails'
+Combustion.initialize! :active_record
 
 RSpec.configure do |config|
   config.order = 'random'
