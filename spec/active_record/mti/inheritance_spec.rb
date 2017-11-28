@@ -10,6 +10,10 @@ describe ActiveRecord::MTI::Inheritance do
     expect(Admin.using_multi_table_inheritance?).to eq(true)
   end
 
+  it "warns of deprication when using old `uses_mti`" do
+    expect { Admin.uses_mti }.to output("DEPRECATED - `uses_mti` is no longer needed (nor has any effect)\n").to_stderr
+  end
+
   context 'class definition' do
 
     describe 'for classes that use MTI' do
