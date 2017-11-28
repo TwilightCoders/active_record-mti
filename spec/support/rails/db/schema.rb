@@ -1,4 +1,8 @@
 ActiveRecord::Schema.define do
+
+  enable_extension 'pgcrypto'
+  enable_extension "uuid-ossp"
+
   self.verbose = false
 
   create_table :users, schema: :public, force: true do |t|
@@ -14,8 +18,13 @@ ActiveRecord::Schema.define do
     t.integer :god_powers
   end
 
-  create_table :posts, force: true do |t|
+  create_table :posts, id: :uuid, force: true do |t|
     t.integer :user_id
+    t.string :title
+    t.timestamps null: false
+  end
+
+  create_table :post_tags, id: :uuid, default: nil, primary_key: :post_id, force: true do |t|
     t.string :title
     t.timestamps null: false
   end
