@@ -118,6 +118,8 @@ module ActiveRecord
           else
             columns.unshift ActiveRecord::ConnectionAdapters::PostgreSQLColumn.new('tableoid', nil, ActiveRecord::MTI.oid_class.new, "oid", false)
           end
+          # Clear the (cached) hash since we added a column.
+          @columns_hash = nil
         end
       end
     end
