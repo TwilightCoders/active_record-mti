@@ -1,10 +1,11 @@
 # ActiveRecord::MTI
 
-## 0.3.0 _(November 7th 2017)_
+## 0.3.0 _(Unreleased)_
 - Greatly improved future-proofing injection strategy.
   - No longer overwriting (and maintaining) ActiveRecord Calculation sub-routines.
 - Instead of injecting at `build_select`, we're injecting at `build_arel` with one additional new sub-routine (`build_mti`)
   - `build_mti` sub-routine detects if an MTI projection is needed based on grouping and selecting from query being built.
+- No longer need to use `uses_mti`
 
 ## 0.2.1 _(September 20th 2017)_
 - More reliable class discrimination
