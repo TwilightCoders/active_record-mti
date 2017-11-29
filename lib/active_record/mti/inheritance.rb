@@ -116,10 +116,10 @@ module ActiveRecord
           if self.respond_to? :attribute
             self.attribute :tableoid, ActiveRecord::MTI.oid_class.new
           else
-            columns.unshift ActiveRecord::ConnectionAdapters::PostgreSQLColumn.new('tableoid', nil, ActiveRecord::MTI.oid_class.new, "oid", false)
+            new_column = ActiveRecord::ConnectionAdapters::PostgreSQLColumn.new('tableoid', nil, ActiveRecord::MTI.oid_class.new, "oid", false)
+            columns.unshift new_column
+            columns_hash['tableoid'] = new_column
           end
-          # Clear the (cached) hash since we added a column.
-          @columns_hash = nil
         end
       end
     end
