@@ -36,6 +36,7 @@
 
 # Compiled source #
 ###################
+/build/
 *.com
 *.class
 *.dll
