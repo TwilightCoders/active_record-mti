@@ -5,7 +5,6 @@ require 'combustion'
 
 require 'simplecov'
 SimpleCov.start do
-  # add_group 'Lib', 'lib'
   add_filter 'spec'
 end
 
