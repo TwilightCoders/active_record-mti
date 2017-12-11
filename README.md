@@ -1,7 +1,8 @@
 [![Version      ](https://img.shields.io/gem/v/active_record-mti.svg?maxAge=2592000)](https://rubygems.org/gems/active_record-mti)
 [![Build Status ](https://travis-ci.org/TwilightCoders/active_record-mti.svg)](https://travis-ci.org/TwilightCoders/active_record-mti)
-[![Code Climate ](https://codeclimate.com/github/TwilightCoders/active_record-mti/badges/gpa.svg)](https://codeclimate.com/github/TwilightCoders/active_record-mti)
+[![Code Climate ](https://api.codeclimate.com/v1/badges/27b02e09b5da0a7ed2fc/maintainability)](https://codeclimate.com/github/TwilightCoders/active_record-mti/maintainability)
 [![Test Coverage](https://codeclimate.com/github/TwilightCoders/active_record-mti/badges/coverage.svg)](https://codeclimate.com/github/TwilightCoders/active_record-mti/coverage)
+[![Dependencies ](https://gemnasium.com/badges/github.com/TwilightCoders/active_record-mti.svg)](https://gemnasium.com/github.com/TwilightCoders/active_record-mti)
 
 # ActiveRecord::MTI
 
