@@ -2,6 +2,15 @@ require 'spec_helper'
 
 describe ActiveRecord::MTI::Calculations do
 
+  context 'when an exception occurs' do
+    it 'does not continue to adversely affect additional queries' do
+      Admin.create(email: 'bob')
+      expect{ Admin.joins(Transportation::Vehicle).count }.to raise_error(RuntimeError)
+      expect(Thread.current['skip_tableoid_cast']).to_not eq(true)
+      expect(Admin.count).to eq(1)
+    end
+  end
+
   context "don't project tableoid on" do
     it "grouping" do
 
@@ -44,5 +53,4 @@ describe ActiveRecord::MTI::Calculations do
       expect(sql).to match(/GROUP BY .*, \"admins\".\"tableoid\"/)
     end
   end
-
 end
