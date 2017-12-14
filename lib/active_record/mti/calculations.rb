@@ -14,8 +14,8 @@ module ActiveRecord
         orignal_value = Thread.current['skip_tableoid_cast']
         Thread.current['skip_tableoid_cast'] = value
         return_value = yield if block_given?
+      ensure
         Thread.current['skip_tableoid_cast'] = orignal_value
-        return return_value
       end
 
     end
