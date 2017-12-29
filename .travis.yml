@@ -1,5 +1,5 @@
 language: ruby
-sudo: false
+sudo: required
 
 cache: bundler
 script:
@@ -9,7 +9,10 @@ after_success:
   - bundle exec codeclimate-test-reporter
 
 addons:
-  postgresql: "9.3"
+  postgresql: "9.6"
+
+before_script:
+  - bash install-postgres-10.sh
 
 rvm:
   - 2.4
