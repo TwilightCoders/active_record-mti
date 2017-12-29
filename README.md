@@ -103,7 +103,7 @@ end
 
 ## Contributing
 
-1. Fork it ( https://github.com/[my-github-username]/active_record-mti/fork )
+1. Fork it ( https://github.com/TwilightCoders/active_record-mti/fork )
 2. Create your feature branch (`git checkout -b my-new-feature`)
 3. Commit your changes (`git commit -am 'Add some feature'`)
 4. Push to the branch (`git push origin my-new-feature`)
