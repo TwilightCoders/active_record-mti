@@ -1,5 +1,5 @@
 module ActiveRecord
   module MTI
-    VERSION = '0.3.0-rc4'
+    VERSION = '0.3.0-rc4'.freeze
   end
 end

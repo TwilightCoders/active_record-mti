@@ -20,7 +20,6 @@ require 'active_record/mti/railtie' if defined?(Rails::Railtie)
 
 module ActiveRecord
   module MTI
-
     # Rails likes to make breaking changes in it's minor versions (like 4.1 - 4.2) :P
     mattr_accessor :oid_class
 
@@ -29,7 +28,7 @@ module ActiveRecord
 
       def logger
         @logger ||= Logger.new($stdout).tap do |log|
-          log.progname = self.name
+          log.progname = name
           log.level = Logger::INFO
         end
       end
@@ -65,17 +64,16 @@ module ActiveRecord
     ]
 
     def self.find_oid_class
-      oid_class_candidates.find(nil) { |klass|
+      oid_class_candidates.find(nil) do |klass|
         begin
           klass.constantize
           true
         rescue NameError
           false
         end
-      }.constantize
+      end.constantize
     end
 
-    self.oid_class = self.find_oid_class
-
+    self.oid_class = find_oid_class
   end
 end

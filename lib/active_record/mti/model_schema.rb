@@ -1,7 +1,6 @@
 module ActiveRecord
   module MTI
     module ModelSchema
-
       def self.prepended(base)
         base.extend(ClassMethods)
       end
@@ -38,7 +37,7 @@ module ActiveRecord
         private
 
         def full_table_name_rescue(which)
-          (parents.detect{ |p| p.respond_to?(which) } || self).send(which)
+          (parents.detect { |p| p.respond_to?(which) } || self).send(which)
         end
 
         # Guesses the table name, but does not decorate it with prefix and suffix information.
@@ -49,7 +48,6 @@ module ActiveRecord
           pluralize_table_names ? table_name.pluralize : table_name
         end
       end
-
     end
   end
 end

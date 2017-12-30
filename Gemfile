@@ -3,7 +3,6 @@ source 'https://rubygems.org'
 gemspec
 
 group :test do
-
   # Generates coverage stats of specs
   gem 'simplecov'
 
@@ -15,5 +14,4 @@ group :test do
   gem 'database_cleaner'
 
   gem 'combustion'
-
 end

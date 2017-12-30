@@ -1,7 +1,6 @@
 require 'spec_helper'
 
 describe ActiveRecord::MTI::Inheritance do
-
   it "creates a column even if class doesn't respond to :attribute" do
     allow(Admin).to receive(:respond_to?).with(:attribute).and_return(false)
 
@@ -10,14 +9,12 @@ describe ActiveRecord::MTI::Inheritance do
     expect(Admin.using_multi_table_inheritance?).to eq(true)
   end
 
-  it "warns of deprication when using old `uses_mti`" do
+  it 'warns of deprication when using old `uses_mti`' do
     expect { Admin.uses_mti }.to output("DEPRECATED - `uses_mti` is no longer needed (nor has any effect)\n").to_stderr
   end
 
   context 'class definition' do
-
     describe 'for classes that use MTI' do
-
       it 'has non-nil mti_type_column' do
         expect(Admin.mti_type_column).to_not be_nil
       end
@@ -35,12 +32,10 @@ describe ActiveRecord::MTI::Inheritance do
         Admin.create(email: 'foo2@bar.baz', god_powers: 3)
         Admin.create(email: 'foo24@bar.baz', god_powers: 3)
         Admin.create(email: 'foo246@bar.baz', god_powers: 3)
-
       end
     end
 
     describe "for classes that don't use MTI" do
-
       it 'has nil tableoid_column' do
         expect(Post.tableoid_column).to be_nil
       end
@@ -56,10 +51,8 @@ describe ActiveRecord::MTI::Inheritance do
         Post.create(title: 'foo@bar.baz')
         Post.create(title: 'foo2@bar.baz')
         Post.create(title: 'foo24@bar.baz')
-
       end
     end
-
   end
 
   context 'default inheritance_column model' do
@@ -74,7 +67,7 @@ describe ActiveRecord::MTI::Inheritance do
     describe 'base class querying' do
       it 'casts children properly' do
         users = User.all
-        expect(users.select{ |u| u.is_a?(Admin) }.count).to eql(1)
+        expect(users.select { |u| u.is_a?(Admin) }.count).to eql(1)
       end
 
       xit 'deserializes children with child specific data' do
@@ -102,9 +95,8 @@ describe ActiveRecord::MTI::Inheritance do
       end
 
       it 'infers the table_name when defined dynamically' do
-
         class Scrub < ActiveRecord::Base
-          const_set(:All, Class.new(Scrub) do |klass|
+          const_set(:All, Class.new(Scrub) do |_klass|
             class_eval <<-AAA
               self.table_name = 'scrubs/all'
             AAA
@@ -118,21 +110,18 @@ describe ActiveRecord::MTI::Inheritance do
 
   describe 'views' do
     before(:each) do
-
       User.connection.execute <<-SQL
         CREATE OR REPLACE VIEW "users_all"
         AS SELECT * FROM "users"
       SQL
 
       class UserView < User
-        self.table_name = "users_all"
+        self.table_name = 'users_all'
       end
-
     end
 
     if ActiveRecord::Base.connection.version >= Gem::Version.new('9.4')
       it 'allows creation pass-through' do
-
         UserView.create(email: 'dale@twilightcoders.net')
       end
     end
@@ -161,7 +150,7 @@ describe ActiveRecord::MTI::Inheritance do
 
     describe 'base class querying' do
       it 'casts children properly' do
-        expect(Transportation::Vehicle.all.select{ |v| v.is_a?(Transportation::Truck) }.count).to eql(1)
+        expect(Transportation::Vehicle.all.select { |v| v.is_a?(Transportation::Truck) }.count).to eql(1)
       end
 
       xit 'deserializes children with child specific data' do
@@ -180,5 +169,4 @@ describe ActiveRecord::MTI::Inheritance do
       end
     end
   end
-
 end

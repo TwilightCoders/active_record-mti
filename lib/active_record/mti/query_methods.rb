@@ -1,7 +1,6 @@
 module ActiveRecord
   module MTI
     module QueryMethods
-
       def build_arel
         select_by_tableoid = select_values.delete(:tableoid) == :tableoid
         group_by_tableoid = group_values.delete(:tableoid) == :tableoid
@@ -20,8 +19,8 @@ module ActiveRecord
 
       def tableoid?(klass)
         !Thread.current['skip_tableoid_cast'] &&
-        klass.using_multi_table_inheritance? &&
-        klass.has_tableoid_column?
+          klass.using_multi_table_inheritance? &&
+          klass.has_tableoid_column?
       end
 
       def tableoid_project(klass)
@@ -31,7 +30,6 @@ module ActiveRecord
       def tableoid_group(klass)
         klass.mti_type_column
       end
-
     end
   end
 end

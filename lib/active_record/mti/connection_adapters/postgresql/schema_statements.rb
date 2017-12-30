@@ -24,19 +24,19 @@ module ActiveRecord
             if (schema = options.delete(:schema))
               # If we specify a schema then we only create it if it doesn't exist
               # and we only force create it if only the specific schema is in the search path
-              table_name = %Q("#{schema}"."#{table_name}")
+              table_name = %("#{schema}"."#{table_name}")
             end
 
             if (inherited_table = options.delete(:inherits))
               # options[:options] = options[:options].sub("INHERITS", "() INHERITS") if td.columns.empty?
-              options[:options] = [%Q(INHERITS ("#{inherited_table}")), options[:options]].compact.join
+              options[:options] = [%(INHERITS ("#{inherited_table}")), options[:options]].compact.join
             end
 
             results = super(table_name, options)
 
             if inherited_table
               inherited_table_primary_key = primary_key(inherited_table)
-              execute %Q(ALTER TABLE "#{table_name}" ADD PRIMARY KEY ("#{inherited_table_primary_key}"))
+              execute %(ALTER TABLE "#{table_name}" ADD PRIMARY KEY ("#{inherited_table_primary_key}"))
 
               indexes(inherited_table).each do |index|
                 attributes = index.to_h.slice(:unique, :using, :where, :orders)
@@ -53,14 +53,14 @@ module ActiveRecord
 
           # Parent of inherited table
           def parent_tables(table_name)
-            result = exec_query(<<-SQL, "SCHEMA")
+            result = exec_query(<<-SQL, 'SCHEMA')
               SELECT pg_namespace.nspname, pg_class.relname
               FROM pg_catalog.pg_inherits
                 INNER JOIN pg_catalog.pg_class ON (pg_inherits.inhparent = pg_class.oid)
                 INNER JOIN pg_catalog.pg_namespace ON (pg_class.relnamespace = pg_namespace.oid)
               WHERE inhrelid = '#{table_name}'::regclass
             SQL
-            result.map{|a| a['relname']}
+            result.map { |a| a['relname'] }
           end
 
           def parent_table(table_name)

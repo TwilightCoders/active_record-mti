@@ -10,7 +10,6 @@ module ActiveRecord
   # output format (i.e., ActiveRecord::Schema).
   module MTI
     module SchemaDumper #:nodoc:
-
       def dumped_tables
         @dumped_tables ||= []
       end
@@ -44,7 +43,7 @@ module ActiveRecord
 
       def inject_inherits_for_create_table(string, table, parent_table)
         tbl_start = "create_table #{remove_prefix_and_suffix(table).inspect}"
-        tbl_end = " do |t|"
+        tbl_end = ' do |t|'
         tbl_inherit = ", inherits: '#{parent_table}'"
         string.gsub!(/#{Regexp.escape(tbl_start)}.*#{Regexp.escape(tbl_end)}/, tbl_start + tbl_inherit + tbl_end)
       end
@@ -65,13 +64,12 @@ module ActiveRecord
       end
 
       def remove_prefix_and_suffix(table)
-        table.gsub(/^(#{ActiveRecord::Base.table_name_prefix})(.+)(#{ActiveRecord::Base.table_name_suffix})$/,  "\\2")
+        table.gsub(/^(#{ActiveRecord::Base.table_name_prefix})(.+)(#{ActiveRecord::Base.table_name_suffix})$/, '\\2')
       end
 
       def already_dumped?(table)
         dumped_tables.include? table
       end
-
     end
   end
 end
