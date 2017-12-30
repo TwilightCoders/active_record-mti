@@ -14,6 +14,26 @@ ActiveRecord::Schema.define do
     t.integer :god_powers
   end
 
+  create_table :developers, force: true, inherits: :users do |t|
+    t.integer :commits
+  end
+
+  create_table "user/managers", force: true, inherits: :users do |t|
+    t.integer :level
+  end
+
+  create_table "user_managers", force: true, inherits: :users do |t|
+    t.integer :level
+  end
+
+  create_table "users/managers", force: true, inherits: :users do |t|
+    t.integer :level
+  end
+
+  create_table "managers", force: true, inherits: :users do |t|
+    t.integer :level
+  end
+
   create_table 'admin/hackers', force: true, inherits: :admins do |t|
     t.integer :god_powers
   end
