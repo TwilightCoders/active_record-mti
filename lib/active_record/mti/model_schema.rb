@@ -9,23 +9,69 @@ module ActiveRecord
       module ClassMethods
         # Computes and returns a table name according to default conventions.
         def compute_table_name
-          if self != base_class
-            # Nested classes are prefixed with singular parent table name.
-            if superclass < Base && !superclass.abstract_class?
-              contained = superclass.table_name
-              contained = contained.singularize if superclass.pluralize_table_names
-              contained += '/'
+          if not_base_model?
+
+            warned = false
+
+            table_name_parts = [
+              full_table_name_prefix,
+              nil, # Placeholder for contained_table_name (used later)
+              decorated_table_name(name),
+              full_table_name_suffix
+            ]
+
+            not_nested_table_name_candidate = table_name_parts.join
+
+            if ActiveRecord::MTI.configuration.table_name_nesting
+              table_name_parts[1] = contained_table_name if ActiveRecord::MTI.configuration.table_name_nesting
+              nested_table_name_candidate = table_name_parts.join
+              if check_inheritance_of(nested_table_name_candidate)
+                return nested_table_name_candidate
+              else
+                warned = true
+                ActiveRecord::MTI.logger.warn(<<-WARN.squish)
+                  Couldn't find table definition '#{nested_table_name_candidate}' for #{name}.
+                WARN
+              end
             end
 
-            potential_table_name = "#{full_table_name_prefix}#{contained}#{decorated_table_name(name)}#{full_table_name_suffix}"
-
-            if check_inheritance_of(potential_table_name)
-              potential_table_name
+            if check_inheritance_of(not_nested_table_name_candidate)
+              if warned
+                ActiveRecord::MTI.logger.warn(<<-WARN.squish)
+                  Found table definition '#{not_nested_table_name_candidate}' for #{name}.
+                  Recommended explicitly setting table_name for this model if you're diviating from convention.
+                WARN
+              end
+              not_nested_table_name_candidate
             else
+              if warned
+                ActiveRecord::MTI.logger.warn(<<-WARN.squish)
+                  Falling back on superclass (#{superclass.name}) table definition '#{superclass.table_name}' for #{name}.
+                  Recommended explicitly setting table_name for this model if you're diviating from convention.
+                WARN
+              end
               superclass.table_name
             end
           else
             super
+          end
+        end
+
+        def not_base_model?
+          self != base_class &&
+          superclass < Base &&
+          !superclass.abstract_class?
+        end
+
+        def contained_table_name
+          contained_parent_table_name + ActiveRecord::MTI.configuration.nesting_seperator
+        end
+
+        def contained_parent_table_name
+          if ActiveRecord::MTI.configuration.singular_parent
+            superclass.table_name.singularize
+          else
+            superclass.table_name
           end
         end
 
