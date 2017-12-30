@@ -22,6 +22,13 @@ module ActiveRecord
   module MTI
     # Rails likes to make breaking changes in it's minor versions (like 4.1 - 4.2) :P
     mattr_accessor :oid_class
+    self.oid_class = if defined?(::ActiveRecord::Type::Integer) # 5.1, 5.0
+                       ::ActiveRecord::Type::Integer
+                     elsif defiend?(::ActiveRecord::ConnectionAdapters::PostgreSQL::OID::Integer) # 4.2
+                       ::ActiveRecord::ConnectionAdapters::PostgreSQL::OID::Integer
+                     elsif defiend?(::ActiveRecord::ConnectionAdapters::PostgreSQLAdapter::OID::Integer) # 4.1, 4.0
+                       ::ActiveRecord::ConnectionAdapters::PostgreSQLAdapter::OID::Integer
+                     end
 
     class << self
       attr_writer :logger
@@ -51,29 +58,5 @@ module ActiveRecord
     def self.testify(value)
       value == true || value == 't' || value == 1 || value == '1'
     end
-
-    private
-
-    mattr_accessor :oid_class_candidates
-
-    # Cannot assign default inside block because of rails 4.0
-    self.oid_class_candidates = [
-      '::ActiveRecord::ConnectionAdapters::PostgreSQLAdapter::OID::Integer', # 4.0, 4.1
-      '::ActiveRecord::ConnectionAdapters::PostgreSQL::OID::Integer', # 4.2
-      '::ActiveRecord::Type::Integer' # 5.0, 5.1
-    ]
-
-    def self.find_oid_class
-      oid_class_candidates.find(nil) do |klass|
-        begin
-          klass.constantize
-          true
-        rescue NameError
-          false
-        end
-      end.constantize
-    end
-
-    self.oid_class = find_oid_class
   end
 end
