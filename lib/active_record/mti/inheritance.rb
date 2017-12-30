@@ -2,7 +2,6 @@ module ActiveRecord
   # == Multi-Table Inheritance
   module MTI
     module Inheritance
-
       def self.prepended(subclass)
         subclass.extend(ClassMethods)
         class << subclass
@@ -21,35 +20,33 @@ module ActiveRecord
           subclass.using_multi_table_inheritance?
         end
 
-        def uses_mti(*args)
-          warn "DEPRECATED - `uses_mti` is no longer needed (nor has any effect)"
+        def uses_mti(*_args)
+          warn 'DEPRECATED - `uses_mti` is no longer needed (nor has any effect)'
         end
 
         def using_multi_table_inheritance?
           mti = ActiveRecord::MTI::Registry.tableoid?(self)
-          return (mti != false) unless mti == nil
+          return (mti != false) unless mti.nil?
 
           if (mti = check_inheritance_of(@table_name))
-            if (self != base_class && self.table_name == base_class.table_name)
-              mti = false
-            else
-              mti = detect_tableoid(table_name)
-            end
+            mti = if self != base_class && table_name == base_class.table_name
+                    false
+                  else
+                    detect_tableoid(table_name)
+                  end
           end
 
           ActiveRecord::MTI::Registry[self] = mti
 
-          descendants.each do |d|
-            d.using_multi_table_inheritance?
-          end
+          descendants.each(&:using_multi_table_inheritance?)
 
-          return mti && mti != false
+          mti && mti != false
         end
 
         private
 
         def check_inheritance_of(table_name, table_schema = 'public')
-          ActiveRecord::MTI.logger.debug("Trying to check inheritance of table with no table name (#{self})") and return nil unless table_name
+          ActiveRecord::MTI.logger.debug("Trying to check inheritance of table with no table name (#{self})") && (return nil) unless table_name
           ActiveRecord::MTI.logger.debug "Checking inheritance for #{table_schema}.#{table_name}"
 
           result = connection.execute <<-SQL
@@ -65,11 +62,10 @@ module ActiveRecord
             ) AS uses_inheritance;
           SQL
 
-          return ActiveRecord::MTI.testify(result.try(:first)['uses_inheritance']) == true
+          ActiveRecord::MTI.testify(result.try(:first)['uses_inheritance']) == true
         end
 
         def detect_tableoid(table_name, table_schema = 'public')
-
           tableoid_query = connection.execute(<<-SQL
             SELECT 1 AS has_tableoid_column, t.table_name::regclass::oid as tableoid
               FROM   pg_catalog.pg_attribute
@@ -78,12 +74,12 @@ module ActiveRecord
               AND    attname  = 'tableoid'
               AND    NOT attisdropped;
           SQL
-          ).first
+                                             ).first
 
           tableoid = tableoid_query.try(:[], 'tableoid') || false
           @tableoid_column = ActiveRecord::MTI.testify(tableoid_query.try(:[], 'has_tableoid_column'))
 
-          if (has_tableoid_column?)
+          if has_tableoid_column?
             ActiveRecord::MTI.logger.debug "#{table_schema}.#{table_name} has tableoid column! (#{tableoid})"
             add_tableoid_column
             @mti_type_column = arel_table[:tableoid]
@@ -113,10 +109,10 @@ module ActiveRecord
         end
 
         def add_tableoid_column
-          if self.respond_to? :attribute
-            self.attribute :tableoid, ActiveRecord::MTI.oid_class.new
+          if respond_to? :attribute
+            attribute :tableoid, ActiveRecord::MTI.oid_class.new
           else
-            new_column = ActiveRecord::ConnectionAdapters::PostgreSQLColumn.new('tableoid', nil, ActiveRecord::MTI.oid_class.new, "oid", false)
+            new_column = ActiveRecord::ConnectionAdapters::PostgreSQLColumn.new('tableoid', nil, ActiveRecord::MTI.oid_class.new, 'oid', false)
             columns.unshift new_column
             columns_hash['tableoid'] = new_column
           end

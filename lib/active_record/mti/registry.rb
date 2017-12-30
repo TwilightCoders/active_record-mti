@@ -1,7 +1,6 @@
 module ActiveRecord
   module MTI
     module Registry
-
       mattr_accessor :tableoids
       self.tableoids = { ActiveRecord::Base => false }
 
@@ -17,7 +16,6 @@ module ActiveRecord
       def self.tableoid?(klass)
         tableoids[klass]
       end
-
     end
   end
 end

@@ -1,7 +1,6 @@
 module ActiveRecord
   module MTI
     module Calculations
-
       private
 
       def perform_calculation(*args)
@@ -17,7 +16,6 @@ module ActiveRecord
       ensure
         Thread.current['skip_tableoid_cast'] = orignal_value
       end
-
     end
   end
 end
