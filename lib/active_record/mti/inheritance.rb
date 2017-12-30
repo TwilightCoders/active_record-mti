@@ -79,11 +79,10 @@ module ActiveRecord
           tableoid = tableoid_query.try(:[], 'tableoid') || false
           @tableoid_column = ActiveRecord::MTI.testify(tableoid_query.try(:[], 'has_tableoid_column'))
 
-          if has_tableoid_column?
+          @mti_type_column = if has_tableoid_column?
             ActiveRecord::MTI.logger.debug "#{table_schema}.#{table_name} has tableoid column! (#{tableoid})"
-            @mti_type_column = arel_table[:tableoid]
-          else
-            @mti_type_column = nil
+
+            arel_table[:tableoid]
           end
 
           tableoid
@@ -103,8 +102,7 @@ module ActiveRecord
         # Type condition only applies if it's STI, otherwise it's
         # done for free by querying the inherited table in MTI
         def type_condition(table = arel_table)
-          return nil if using_multi_table_inheritance?
-          super
+          super unless using_multi_table_inheritance?
         end
       end
     end
