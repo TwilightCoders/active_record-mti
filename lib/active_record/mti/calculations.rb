@@ -3,18 +3,12 @@ module ActiveRecord
     module Calculations
       private
 
-      def perform_calculation(*args)
-        swap_and_restore_tableoid_cast(true) do
-          super
-        end
-      end
+      def perform_calculation(*)
+        org, Thread.current['skip_tableoid_cast'] = Thread.current['skip_tableoid_cast'], true
 
-      def swap_and_restore_tableoid_cast(value)
-        orignal_value = Thread.current['skip_tableoid_cast']
-        Thread.current['skip_tableoid_cast'] = value
-        return_value = yield if block_given?
+        super
       ensure
-        Thread.current['skip_tableoid_cast'] = orignal_value
+        Thread.current['skip_tableoid_cast'] = org
       end
     end
   end
