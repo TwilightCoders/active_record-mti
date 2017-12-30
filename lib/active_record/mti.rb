@@ -7,6 +7,7 @@ require 'active_record/connection_handling'
 
 require 'core_ext/hash'
 
+require 'active_record/mti/config'
 require 'active_record/mti/schema_dumper'
 require 'active_record/mti/registry'
 require 'active_record/mti/inheritance'
