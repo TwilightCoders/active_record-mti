@@ -81,7 +81,6 @@ module ActiveRecord
 
           if has_tableoid_column?
             ActiveRecord::MTI.logger.debug "#{table_schema}.#{table_name} has tableoid column! (#{tableoid})"
-            add_tableoid_column
             @mti_type_column = arel_table[:tableoid]
           else
             @mti_type_column = nil
@@ -106,16 +105,6 @@ module ActiveRecord
         def type_condition(table = arel_table)
           return nil if using_multi_table_inheritance?
           super
-        end
-
-        def add_tableoid_column
-          if respond_to? :attribute
-            attribute :tableoid, ActiveRecord::MTI.oid_class.new
-          else
-            new_column = ActiveRecord::ConnectionAdapters::PostgreSQLColumn.new('tableoid', nil, ActiveRecord::MTI.oid_class.new, 'oid', false)
-            columns.unshift new_column
-            columns_hash['tableoid'] = new_column
-          end
         end
       end
     end
