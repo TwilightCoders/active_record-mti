@@ -15,10 +15,6 @@ describe ActiveRecord::MTI::Inheritance do
 
   context 'class definition' do
     describe 'for classes that use MTI' do
-      it 'has true tableoid_column' do
-        expect(Admin.tableoid_column).to eq(true)
-      end
-
       it "doesn't check inheritance multiple times" do
         # Due to the anonymous class ("god = Class.new(Admin)") rspec can't properly distinquish
         # between the two classes. So at most 2 times!
@@ -28,12 +24,6 @@ describe ActiveRecord::MTI::Inheritance do
         Admin.create(email: 'foo2@bar.baz', god_powers: 3)
         Admin.create(email: 'foo24@bar.baz', god_powers: 3)
         Admin.create(email: 'foo246@bar.baz', god_powers: 3)
-      end
-    end
-
-    describe "for classes that don't use MTI" do
-      it 'has nil tableoid_column' do
-        expect(Post.tableoid_column).to be_nil
       end
     end
   end

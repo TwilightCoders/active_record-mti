@@ -4,16 +4,9 @@ module ActiveRecord
     module Inheritance
       def self.prepended(subclass)
         subclass.extend(ClassMethods)
-        class << subclass
-          attr_reader :tableoid_column
-        end
       end
 
       module ClassMethods
-        def has_tableoid_column?
-          tableoid_column != false
-        end
-
         def inherited(subclass)
           super
           subclass.using_multi_table_inheritance?
@@ -75,10 +68,7 @@ module ActiveRecord
           SQL
                                              ).first
 
-          tableoid = tableoid_query.try(:[], 'tableoid') || false
-          @tableoid_column = ActiveRecord::MTI.testify(tableoid_query.try(:[], 'has_tableoid_column'))
-
-          tableoid
+          tableoid_query.try(:[], 'tableoid') || false
         end
 
         # Called by +instantiate+ to decide which class to use for a new
