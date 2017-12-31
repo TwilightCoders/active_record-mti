@@ -15,7 +15,7 @@ module ActiveRecord
         ActiveSupport.on_load(:active_record) do
           ::ActiveRecord::Base.include(::ActiveRecord::MTI::CoreExtension)
 
-          ::ActiveRecord::Base.prepend(ModelSchema)
+          ::ActiveRecord::Base.extend(ModelSchema)
           ::ActiveRecord::Base.prepend(Inheritance)
           ::ActiveRecord::ConnectionAdapters::PostgreSQLAdapter.prepend(ConnectionAdapters::PostgreSQL::Adapter)
           ::ActiveRecord::ConnectionAdapters::PostgreSQLAdapter.prepend(ConnectionAdapters::PostgreSQL::SchemaStatements)
