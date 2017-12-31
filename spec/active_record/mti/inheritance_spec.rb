@@ -1,14 +1,6 @@
 require 'spec_helper'
 
 describe ActiveRecord::MTI::Inheritance do
-  it "creates a column even if class doesn't respond to :attribute" do
-    allow(Admin).to receive(:respond_to?).with(:attribute).and_return(false)
-
-    ActiveRecord::MTI::Registry.tableoids[Admin] = nil
-
-    expect(Admin.using_multi_table_inheritance?).to eq(true)
-  end
-
   it 'warns of deprication when using old `uses_mti`' do
     expect { Admin.uses_mti }.to output("DEPRECATED - `uses_mti` is no longer needed (nor has any effect)\n").to_stderr
   end

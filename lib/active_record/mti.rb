@@ -39,6 +39,10 @@ module ActiveRecord
                          end.freeze
     end
 
+    def self.registry
+      @registry ||= {}
+    end
+
     ChildTable  = Struct.new(:inhrelid, :inhparent, :inhseqno, :oid, :name, :parent_table_name)
     ParentTable = Struct.new(:oid, :name)
 
