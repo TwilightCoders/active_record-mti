@@ -5,21 +5,6 @@ describe ActiveRecord::MTI::Inheritance do
     expect { Admin.uses_mti }.to output("DEPRECATED - `uses_mti` is no longer needed (nor has any effect)\n").to_stderr
   end
 
-  context 'class definition' do
-    describe 'for classes that use MTI' do
-      it "doesn't check inheritance multiple times" do
-        # Due to the anonymous class ("god = Class.new(Admin)") rspec can't properly distinquish
-        # between the two classes. So at most 2 times!
-        expect(Admin).to receive(:check_inheritance_of).and_call_original.at_most(2).times
-
-        Admin.create(email: 'foo@bar.baz', god_powers: 3)
-        Admin.create(email: 'foo2@bar.baz', god_powers: 3)
-        Admin.create(email: 'foo24@bar.baz', god_powers: 3)
-        Admin.create(email: 'foo246@bar.baz', god_powers: 3)
-      end
-    end
-  end
-
   context 'default inheritance_column model' do
     let!(:user) { User.create(email: 'foo@bar.baz') }
     let!(:admin) { Admin.create(email: 'foo@bar.baz', god_powers: 3) }
