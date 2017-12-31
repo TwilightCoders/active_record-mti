@@ -32,6 +32,11 @@ describe ActiveRecord::MTI::Calculations do
   end
 
   context 'projects tableoid' do
+    before do
+      # Make sure to load the child table so Admin will be recognized as a parent
+      Hacker = Class.new(Admin)
+    end
+
     it 'and groups tableoid when selecting :tableoid' do
       sql = Admin.select(:email, :tableoid).group(:email).to_sql
 
