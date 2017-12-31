@@ -25,7 +25,7 @@ module ActiveRecord
             if ActiveRecord::MTI.configuration.table_name_nesting
               table_name_parts[1] = contained_table_name if ActiveRecord::MTI.configuration.table_name_nesting
               nested_table_name_candidate = table_name_parts.join
-              if check_inheritance_of(nested_table_name_candidate)
+              if ActiveRecord::MTI::Inheritance.check(nested_table_name_candidate)
                 return nested_table_name_candidate
               else
                 warned = true
@@ -35,7 +35,7 @@ module ActiveRecord
               end
             end
 
-            if check_inheritance_of(not_nested_table_name_candidate)
+            if ActiveRecord::MTI::Inheritance.check(not_nested_table_name_candidate)
               if warned
                 ActiveRecord::MTI.logger.warn(<<-WARN.squish)
                   Found table definition '#{not_nested_table_name_candidate}' for #{name}.
