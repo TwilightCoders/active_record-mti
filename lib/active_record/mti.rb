@@ -31,10 +31,6 @@ module ActiveRecord
       end
     end
 
-    def self.root
-      @root ||= Pathname.new(File.expand_path('../../', File.dirname(__FILE__)))
-    end
-
     def self.load
       ::ActiveRecord::Base.send                                  :prepend, ModelSchema
       ::ActiveRecord::Base.send                                  :prepend, Inheritance

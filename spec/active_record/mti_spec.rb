@@ -7,9 +7,5 @@ describe ActiveRecord::MTI do
         expect(ActiveRecord::MTI.testify('f')).to eq(false)
       end
     end
-
-    it 'root has the right value' do
-      expect(ActiveRecord::MTI.root).not_to be_nil
-    end
   end
 end
