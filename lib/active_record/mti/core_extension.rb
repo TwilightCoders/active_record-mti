@@ -18,9 +18,12 @@ module ActiveRecord
       end
 
       module ClassMethods #:nodoc:
-        def inherited(subclass)
-          super
-          extend!
+        def table_name=(value)
+          super.tap { extend! }
+        end
+
+        def table_name
+          super.tap { extend! }
         end
 
         def uses_mti(*_args)
@@ -58,6 +61,7 @@ module ActiveRecord
           return if defined?(@extended) && @extended
 
           ::ActiveRecord::MTI::CoreExtension.extend_parent(self) if child_tables.present?
+          ::ActiveRecord::MTI.registry[child.mti_table.inhrelid] ||= child if child.mti_table
 
           @extended = true
         end

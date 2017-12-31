@@ -16,7 +16,7 @@ module ActiveRecord
           ::ActiveRecord::Base.include(::ActiveRecord::MTI::CoreExtension)
 
           ::ActiveRecord::Base.extend(ModelSchema)
-          ::ActiveRecord::Base.prepend(Inheritance)
+          ::ActiveRecord::Base.extend(Inheritance)
           ::ActiveRecord::ConnectionAdapters::PostgreSQLAdapter.prepend(ConnectionAdapters::PostgreSQL::Adapter)
           ::ActiveRecord::ConnectionAdapters::PostgreSQLAdapter.prepend(ConnectionAdapters::PostgreSQL::SchemaStatements)
           ::ActiveRecord::SchemaDumper.prepend(SchemaDumper)
