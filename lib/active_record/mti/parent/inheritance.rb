@@ -5,7 +5,6 @@ module ActiveRecord
       def self.prepended(subclass)
         subclass.extend(ClassMethods)
         class << subclass
-          attr_reader :mti_type_column
           attr_reader :tableoid_column
         end
       end
@@ -78,12 +77,6 @@ module ActiveRecord
 
           tableoid = tableoid_query.try(:[], 'tableoid') || false
           @tableoid_column = ActiveRecord::MTI.testify(tableoid_query.try(:[], 'has_tableoid_column'))
-
-          @mti_type_column = if has_tableoid_column?
-            ActiveRecord::MTI.logger.debug "#{table_schema}.#{table_name} has tableoid column! (#{tableoid})"
-
-            arel_table[:tableoid]
-          end
 
           tableoid
         end

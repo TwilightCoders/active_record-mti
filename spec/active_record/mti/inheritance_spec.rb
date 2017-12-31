@@ -15,10 +15,6 @@ describe ActiveRecord::MTI::Inheritance do
 
   context 'class definition' do
     describe 'for classes that use MTI' do
-      it 'has non-nil mti_type_column' do
-        expect(Admin.mti_type_column).to_not be_nil
-      end
-
       it 'has true tableoid_column' do
         expect(Admin.tableoid_column).to eq(true)
       end
@@ -38,10 +34,6 @@ describe ActiveRecord::MTI::Inheritance do
     describe "for classes that don't use MTI" do
       it 'has nil tableoid_column' do
         expect(Post.tableoid_column).to be_nil
-      end
-
-      it 'has nil mti_type_column' do
-        expect(Post.mti_type_column).to be_nil
       end
     end
   end
