@@ -3,12 +3,6 @@ module ActiveRecord
     module ConnectionAdapters
       module PostgreSQL
         module Adapter
-          def version
-            Gem::Version.new exec_query(<<-SQL, 'SCHEMA').rows.first.first
-              SHOW server_version;
-            SQL
-          end
-
           def column_definitions(table_name) # :nodoc:
             exec_query(<<-SQL, 'SCHEMA').rows
               SELECT a.attname, format_type(a.atttypid, a.atttypmod),
