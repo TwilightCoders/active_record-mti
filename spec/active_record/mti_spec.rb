@@ -1,15 +1,6 @@
 require 'spec_helper'
 
 describe ActiveRecord::MTI do
-  context 'helper' do
-    describe '#testify' do
-      it 'returns true for truthy values' do
-        expect(ActiveRecord::MTI.testify('f')).to eq(false)
-      end
-    end
-
-  end
-
   describe "#child_tables" do
     it "returns an array of child tables" do
       # Sort the tables by name to not depend on the order
