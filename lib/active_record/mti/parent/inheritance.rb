@@ -1,3 +1,5 @@
+require 'active_support/core_ext/string/inflections'
+
 module ActiveRecord
   # == Multi-Table Inheritance
   module MTI

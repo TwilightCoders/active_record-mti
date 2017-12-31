@@ -2,6 +2,7 @@ require 'active_support/concern'
 require 'active_support/core_ext/object/blank'
 require 'active_support/core_ext/string/inflections'
 
+require 'active_record/mti/child/model_schema'
 require 'active_record/mti/parent/inheritance'
 require 'active_record/mti/parent/query_methods'
 require 'active_record/mti/parent/calculations'

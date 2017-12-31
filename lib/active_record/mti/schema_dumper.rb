@@ -1,3 +1,5 @@
+require 'core_ext/hash'
+
 # Modified SchemaDumper that knows how to dump
 # inherited tables. Key is that we have to dump parent
 # tables before we dump child tables (of course).
