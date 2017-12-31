@@ -98,7 +98,7 @@ describe ActiveRecord::MTI::Inheritance do
 
           it "doesn't check inheritance multiple times" do
             # ActiveRecord::MTI::Inheritance.register(model, false)
-            expect(model).to receive(:check_inheritance_of).and_call_original.exactly(1).times
+            expect(ActiveRecord::MTI::Inheritance).to receive(:check).with(meta[:table_name]).and_call_original.exactly(1).times
 
             model.create(title: 'foo@bar.baz')
             model.create(title: 'foo2@bar.baz')

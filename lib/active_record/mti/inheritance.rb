@@ -11,6 +11,26 @@ module ActiveRecord
         end
       end
 
+      def self.check(table_name, table_schema = 'public')
+        ActiveRecord::MTI.logger.debug("Trying to check inheritance of table with no table name (#{self})") and return nil unless table_name
+        ActiveRecord::MTI.logger.debug "Checking inheritance for #{table_schema}.#{table_name}"
+
+        result = ActiveRecord::Base.connection.execute <<-SQL
+          SELECT EXISTS (
+            SELECT 1
+              FROM pg_catalog.pg_inherits       AS i
+                JOIN information_schema.tables  AS t ON t.table_schema = '#{table_schema}' AND t.table_name = '#{table_name}'
+                LEFT JOIN pg_catalog.pg_rewrite AS r ON r.ev_class     = t.table_name::regclass::oid
+                LEFT JOIN pg_catalog.pg_depend  AS d ON d.objid        = r.oid
+                LEFT JOIN pg_catalog.pg_class   AS c ON c.oid          = d.refobjid
+              WHERE i.inhrelid  = COALESCE(c.relname, t.table_name)::regclass::oid
+                OR i.inhparent = COALESCE(c.relname, t.table_name)::regclass::oid
+          ) AS uses_inheritance;
+        SQL
+
+        return ActiveRecord::MTI.testify(result.try(:first)['uses_inheritance']) == true
+      end
+
       module ClassMethods
         def has_tableoid_column?
           tableoid_column != false
@@ -25,50 +45,38 @@ module ActiveRecord
           warn "DEPRECATED - `uses_mti` is no longer needed (nor has any effect)"
         end
 
-        def using_multi_table_inheritance?
-          mti = ActiveRecord::MTI::Registry.tableoid?(self)
-          return (mti != false) unless mti == nil
-
-          if (mti = check_inheritance_of(@table_name))
-            if (self != base_class && self.table_name == base_class.table_name)
-              mti = false
-            else
-              mti = detect_tableoid(table_name)
-            end
+        def tableoid
+          if (mti = ActiveRecord::MTI::Registry.tableoid?(self)) == nil
+            ActiveRecord::MTI::Registry[self] = detect_tableoid
+          else
+            mti
           end
+        end
 
-          ActiveRecord::MTI::Registry[self] = mti
+        def using_multi_table_inheritance?
+          return false unless tableoid
 
           descendants.each do |d|
             d.using_multi_table_inheritance?
           end
 
-          return mti && mti != false
+          return true
         end
 
         private
 
-        def check_inheritance_of(table_name, table_schema = 'public')
-          ActiveRecord::MTI.logger.debug("Trying to check inheritance of table with no table name (#{self})") and return nil unless table_name
-          ActiveRecord::MTI.logger.debug "Checking inheritance for #{table_schema}.#{table_name}"
-
-          result = connection.execute <<-SQL
-            SELECT EXISTS (
-              SELECT 1
-                FROM pg_catalog.pg_inherits       AS i
-                  JOIN information_schema.tables  AS t ON t.table_schema = '#{table_schema}' AND t.table_name = '#{table_name}'
-                  LEFT JOIN pg_catalog.pg_rewrite AS r ON r.ev_class     = t.table_name::regclass::oid
-                  LEFT JOIN pg_catalog.pg_depend  AS d ON d.objid        = r.oid
-                  LEFT JOIN pg_catalog.pg_class   AS c ON c.oid          = d.refobjid
-                WHERE i.inhrelid  = COALESCE(c.relname, t.table_name)::regclass::oid
-                  OR i.inhparent = COALESCE(c.relname, t.table_name)::regclass::oid
-            ) AS uses_inheritance;
-          SQL
-
-          return ActiveRecord::MTI.testify(result.try(:first)['uses_inheritance']) == true
+        def detect_tableoid
+          if (mti = ActiveRecord::MTI::Inheritance.check(@table_name))
+            if (self != base_class && self.table_name == base_class.table_name)
+              mti = false
+            else
+              mti = query_tableoid(table_name)
+            end
+          end
+          mti
         end
 
-        def detect_tableoid(table_name, table_schema = 'public')
+        def query_tableoid(table_name, table_schema = 'public')
 
           tableoid_query = connection.execute(<<-SQL
             SELECT 1 AS has_tableoid_column, t.table_name::regclass::oid as tableoid
