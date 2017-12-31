@@ -17,8 +17,6 @@ module ActiveRecord
 
           ::ActiveRecord::Base.prepend(ModelSchema)
           ::ActiveRecord::Base.prepend(Inheritance)
-          ::ActiveRecord::Relation.prepend(QueryMethods)
-          ::ActiveRecord::Relation.prepend(Calculations)
           ::ActiveRecord::ConnectionAdapters::PostgreSQLAdapter.prepend(ConnectionAdapters::PostgreSQL::Adapter)
           ::ActiveRecord::ConnectionAdapters::PostgreSQLAdapter.prepend(ConnectionAdapters::PostgreSQL::SchemaStatements)
           ::ActiveRecord::SchemaDumper.prepend(SchemaDumper)
