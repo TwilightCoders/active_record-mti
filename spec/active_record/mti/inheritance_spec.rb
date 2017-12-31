@@ -43,15 +43,6 @@ describe ActiveRecord::MTI::Inheritance do
       it 'has nil mti_type_column' do
         expect(Post.mti_type_column).to be_nil
       end
-
-      it "doesn't check inheritance multiple times" do
-        # ActiveRecord::MTI::Inheritance.register(Post, false)
-        expect(Post).to receive(:check_inheritance_of).and_call_original.exactly(1).times
-
-        Post.create(title: 'foo@bar.baz')
-        Post.create(title: 'foo2@bar.baz')
-        Post.create(title: 'foo24@bar.baz')
-      end
     end
   end
 
