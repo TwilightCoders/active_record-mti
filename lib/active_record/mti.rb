@@ -39,6 +39,12 @@ module ActiveRecord
                          end.freeze
     end
 
+    def self.postgresql_version
+      @postgresql_version ||= Gem::Version.new(ActiveRecord::Base.connection.execute(<<-SQL, 'SCHEMA').to_a.first['server_version'])
+        SHOW server_version;
+      SQL
+    end
+
     def self.registry
       @registry ||= {}
     end

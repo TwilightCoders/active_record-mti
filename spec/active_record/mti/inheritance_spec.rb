@@ -85,7 +85,7 @@ describe ActiveRecord::MTI::Inheritance do
       end
     end
 
-    if ActiveRecord::Base.connection.version >= Gem::Version.new('9.4')
+    if ActiveRecord::MTI.postgresql_version >= Gem::Version.new('9.4')
       it 'allows creation pass-through' do
         UserView.create(email: 'dale@twilightcoders.net')
       end
