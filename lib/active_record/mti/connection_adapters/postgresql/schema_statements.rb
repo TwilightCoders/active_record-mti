@@ -1,3 +1,4 @@
+require 'active_support/core_ext/hash/slice'
 require 'active_record/connection_adapters/postgresql_adapter'
 
 module ActiveRecord

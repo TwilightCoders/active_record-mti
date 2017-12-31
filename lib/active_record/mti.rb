@@ -1,6 +1,4 @@
 require 'active_record/mti/version'
-require 'active_support/all'
-require 'core_ext/hash'
 require 'active_record/mti/railtie' if defined?(Rails::Railtie)
 
 module ActiveRecord

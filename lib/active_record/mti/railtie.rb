@@ -1,7 +1,4 @@
 require 'active_record/mti/core_extension'
-require 'active_record/mti/child/model_schema'
-require 'active_record/mti/parent/query_methods'
-require 'active_record/mti/parent/calculations'
 require 'active_record/mti/connection_adapters/postgresql/schema_statements'
 require 'active_record/mti/connection_adapters/postgresql/adapter'
 require 'active_record/mti/schema_dumper'
