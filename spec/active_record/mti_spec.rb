@@ -31,7 +31,6 @@ describe ActiveRecord::MTI do
       # Sort the tables by name to not depend on the order
       parent_tables = ActiveRecord::MTI.parent_tables.sort_by(&:name)
 
-      # binding.pry
       expect(parent_tables[0].name).to eq('admins')
       expect(parent_tables[1].name).to eq('users')
       expect(parent_tables[2].name).to eq('vehicles')

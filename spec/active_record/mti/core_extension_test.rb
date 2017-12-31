@@ -16,7 +16,7 @@ describe ActiveRecord::MTI::CoreExtension do
     it "returns an empty array if the model's table does not have any descendants" do
       expect(Post.child_tables).to be_empty
       expect(Transportation::Truck.child_tables).to be_empty
-      # expect(Transportation::Military::Vehicle.child_tables).to be_empty
+      expect(Transportation::Military::Vehicle.child_tables).to be_empty
     end
   end
 
@@ -33,9 +33,9 @@ describe ActiveRecord::MTI::CoreExtension do
 
     it "returns a table object if the model's table is a parent of other table" do
       expect(Post.mti_table_as_parent).to be nil
+      expect(Admin.mti_table_as_parent).to be nil
       expect(Transportation::Truck.mti_table_as_parent).to be nil
-      # expect(Admin.mti_table_as_parent).to be nil
-      # expect(Transportation::Military::Vehicle.mti_table_as_parent).to be nil
+      expect(Transportation::Military::Vehicle.mti_table_as_parent).to be nil
     end
   end
 
