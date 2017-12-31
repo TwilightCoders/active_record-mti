@@ -12,10 +12,6 @@ module ActiveRecord
           subclass.using_multi_table_inheritance?
         end
 
-        def uses_mti(*_args)
-          warn 'DEPRECATED - `uses_mti` is no longer needed (nor has any effect)'
-        end
-
         def using_multi_table_inheritance?
           mti = ActiveRecord::MTI::Registry.tableoid?(self)
           return (mti != false) unless mti.nil?
