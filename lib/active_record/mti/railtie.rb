@@ -1,3 +1,4 @@
+require 'active_record/mti/core_extension'
 require 'active_record/mti/model_schema'
 require 'active_record/mti/inheritance'
 require 'active_record/mti/query_methods'
@@ -12,6 +13,8 @@ module ActiveRecord
       initializer 'active_record-mti.load' do |_app|
         ActiveRecord::MTI.logger.debug 'active_record-mti.load'
         ActiveSupport.on_load(:active_record) do
+          ::ActiveRecord::Base.include(::ActiveRecord::MTI::CoreExtension)
+
           ::ActiveRecord::Base.prepend(ModelSchema)
           ::ActiveRecord::Base.prepend(Inheritance)
           ::ActiveRecord::Relation.prepend(QueryMethods)
