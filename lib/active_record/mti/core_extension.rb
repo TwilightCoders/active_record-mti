@@ -2,7 +2,7 @@ require 'active_support/concern'
 require 'active_support/core_ext/object/blank'
 require 'active_support/core_ext/string/inflections'
 
-# require 'active_record/mti/parent/inheritance'
+require 'active_record/mti/parent/inheritance'
 require 'active_record/mti/parent/query_methods'
 require 'active_record/mti/parent/calculations'
 
@@ -12,9 +12,14 @@ module ActiveRecord
       extend ActiveSupport::Concern
 
       def self.extend_parent(parent)
-        # parent.extend(::ActiveRecord::MTI::Inheritance)
+        parent.extend(::ActiveRecord::MTI::Inheritance)
         parent.const_get(:ActiveRecord_Relation).prepend(::ActiveRecord::MTI::QueryMethods)
         parent.const_get(:ActiveRecord_Relation).prepend(::ActiveRecord::MTI::Calculations)
+      end
+
+      def self.extend_child(child)
+        ::ActiveRecord::MTI.registry[child.mti_table.inhrelid] ||= child
+        child.extend(::ActiveRecord::MTI::ModelSchema)
       end
 
       module ClassMethods #:nodoc:
@@ -61,7 +66,7 @@ module ActiveRecord
           return if defined?(@extended) && @extended
 
           ::ActiveRecord::MTI::CoreExtension.extend_parent(self) if child_tables.present?
-          ::ActiveRecord::MTI.registry[child.mti_table.inhrelid] ||= child if child.mti_table
+          ::ActiveRecord::MTI::CoreExtension.extend_child(child) if child.mti_table
 
           @extended = true
         end
