@@ -23,6 +23,10 @@ module ActiveRecord
           extend!
         end
 
+        def uses_mti(*_args)
+          warn 'DEPRECATED - `uses_mti` is no longer needed (nor has any effect)'
+        end
+
         def child_tables
           @child_tables ||= (mti_table_as_parent ? ::ActiveRecord::MTI.child_tables.select {|table|
             table.inhparent == mti_table_as_parent.oid
