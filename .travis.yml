@@ -12,32 +12,13 @@ addons:
   postgresql: "9.3"
 
 rvm:
+  - 2.5
   - 2.4
   - 2.3
   - 2.2
-  - 2.1
-  - 2.0
 
 gemfile:
+  - gemfiles/activerecord-edge.Gemfile
   - gemfiles/activerecord-5.1.Gemfile
   - gemfiles/activerecord-5.0.Gemfile
   - gemfiles/activerecord-4.2.Gemfile
-  - gemfiles/activerecord-4.1.Gemfile
-  - gemfiles/activerecord-4.0.Gemfile
-
-matrix:
-  exclude:
-  - rvm: 2.0
-    gemfile: gemfiles/activerecord-5.0.Gemfile
-  - rvm: 2.0
-    gemfile: gemfiles/activerecord-5.1.Gemfile
-
-  - rvm: 2.1
-    gemfile: gemfiles/activerecord-5.0.Gemfile
-  - rvm: 2.1
-    gemfile: gemfiles/activerecord-5.1.Gemfile
-
-  - rvm: 2.4
-    gemfile: gemfiles/activerecord-4.0.Gemfile
-  - rvm: 2.4
-    gemfile: gemfiles/activerecord-4.1.Gemfile
