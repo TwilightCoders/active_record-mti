@@ -1,7 +1,6 @@
 ActiveRecord::Schema.define do
-
   enable_extension 'pgcrypto'
-  enable_extension "uuid-ossp"
+  enable_extension 'uuid-ossp'
 
   self.verbose = false
 
@@ -65,7 +64,7 @@ ActiveRecord::Schema.define do
     t.timestamps null: false
   end
 
-  create_table "vehicles/trucks", force: true, inherits: :vehicles do |t|
+  create_table 'vehicles/trucks', force: true, inherits: :vehicles do |t|
     t.integer :bed_size
   end
 end
