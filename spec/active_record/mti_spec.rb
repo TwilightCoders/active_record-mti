@@ -12,8 +12,8 @@ describe ActiveRecord::MTI do
       expect(child_tables[1].name).to eq('admins')
       expect(child_tables[1].parent_table_name).to eq('users')
 
-      expect(child_tables[2].name).to eq('vehicles/trucks')
-      expect(child_tables[2].parent_table_name).to eq('vehicles')
+      expect(child_tables[2].name).to eq('developers')
+      expect(child_tables[2].parent_table_name).to eq('users')
     end
   end
 
