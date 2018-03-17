@@ -1,7 +1,5 @@
 class Hash
-
   def &(other)
-    Hash[(self.keys & other.keys).zip(other.values_at(*(self.keys & other.keys)))]
+    Hash[(keys & other.keys).zip(other.values_at(*(keys & other.keys)))]
   end
-
 end

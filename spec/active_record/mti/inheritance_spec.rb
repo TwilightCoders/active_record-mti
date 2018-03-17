@@ -5,16 +5,12 @@ describe ActiveRecord::MTI::Inheritance do
   context "models that use MTI" do
     {
       Admin => {
-        description: "with set table_name (unnested)",
+        description: "with set table_name",
         table_name: 'admins'
       },
       Developer => {
-        description: "with unset table_name (unnested)",
+        description: "with unset table_name",
         table_name: 'developers'
-      },
-      Manager => {
-        description: "with unset table_name (nested)",
-        table_name: 'user/managers'
       }
     }.each do |model, meta|
       context meta[:description] do
@@ -24,13 +20,9 @@ describe ActiveRecord::MTI::Inheritance do
         it "creates a column even if class doesn't respond to :attribute" do
           allow(model).to receive(:respond_to?).with(:attribute).and_return(false)
 
-          ActiveRecord::MTI::Registry.tableoids[model] = nil
+          ActiveRecord::MTI.registry[model] = nil
 
-          expect(model.using_multi_table_inheritance?).to eq(true)
-        end
-
-        it "warns of deprication when using old `uses_mti`" do
-          expect { model.uses_mti }.to output("DEPRECATED - `uses_mti` is no longer needed (nor has any effect)\n").to_stderr
+          expect(model.sti_or_mti?).to eq(true)
         end
 
         it 'infers the table_name correctly' do
@@ -50,12 +42,8 @@ describe ActiveRecord::MTI::Inheritance do
 
         context 'class definition' do
 
-          it 'has non-nil mti_type_column' do
-            expect(model.mti_type_column).to_not be_nil
-          end
-
-          it 'has true tableoid_column' do
-            expect(model.tableoid_column).to eq(true)
+          it 'has non-nil mti_table' do
+            expect(model.mti_table).to_not be_nil
           end
 
           it "doesn't check inheritance multiple times" do
@@ -88,22 +76,8 @@ describe ActiveRecord::MTI::Inheritance do
         end
 
         context 'class definition' do
-          it 'has nil tableoid_column' do
-            expect(model.tableoid_column).to be_nil
-          end
-
-          it 'has nil mti_type_column' do
-            expect(model.mti_type_column).to be_nil
-          end
-
-          it "doesn't check inheritance multiple times" do
-            # ActiveRecord::MTI::Inheritance.register(model, false)
-            expect(ActiveRecord::MTI::Inheritance).to receive(:check).with(meta[:table_name]).and_call_original.exactly(1).times
-
-            model.create(title: 'foo@bar.baz')
-            model.create(title: 'foo2@bar.baz')
-            model.create(title: 'foo24@bar.baz')
-
+          it 'has nil mti_table' do
+            expect(model.mti_table).to be_nil
           end
         end
       end
@@ -115,15 +89,14 @@ describe ActiveRecord::MTI::Inheritance do
     let!(:truck) { Transportation::Truck.create(color: :blue, bed_size: 10) }
 
     describe 'inheritance_column' do
-      xit 'should set the custom column correctly' do
-        expect(vehicle.type).to eql('vehicles')
-        expect(truck.type).to eql('trucks')
+      it 'should set the custom column correctly' do
+        expect(truck.type).to eql('Transportation::Truck')
       end
     end
 
     describe 'base class querying' do
       it 'casts children properly' do
-        expect(Transportation::Vehicle.all.select{ |v| v.is_a?(Transportation::Truck) }.count).to eql(1)
+        expect(Transportation::Vehicle.all.select { |v| v.is_a?(Transportation::Truck) }.count).to eql(1)
       end
 
       xit 'deserializes children with child specific data' do
@@ -142,5 +115,4 @@ describe ActiveRecord::MTI::Inheritance do
       end
     end
   end
-
 end
