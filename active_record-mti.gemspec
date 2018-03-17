@@ -29,7 +29,7 @@ Gem::Specification.new do |spec|
   spec.require_paths = ['lib', 'spec']
 
   rails_versions = ['>= 4', '< 6']
-  spec.required_ruby_version = '>= 2.0'
+  spec.required_ruby_version = '>= 2.3'
 
   spec.add_runtime_dependency 'activerecord', rails_versions
   spec.add_runtime_dependency 'pg', '~> 0'
