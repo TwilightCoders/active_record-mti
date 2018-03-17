@@ -8,13 +8,16 @@ module ActiveRecord
       # record instance. For single-table inheritance, we check the record
       # for a +type+ column and return the corresponding class.
       def discriminate_class_for_record(record)
-        klass = ::ActiveRecord::MTI.registry[record['tableoid']]
-        klass ||= begin
-                    table = child_tables.detect {|table| table.inhrelid == record['tableoid'] }
-                    table && table.name.classify.safe_constantize
-                  end
+        ::ActiveRecord::MTI.registry[record['tableoid']] || super
+      end
 
-        klass || self
+      def reset_table_name #:nodoc:
+          @table_name = nil
+          self.table_name = reset_mti_table&.name || superclass.table_name || super
+      end
+
+      def compute_table_name
+        mti_table&.name || super
       end
 
       # Type condition only applies if it's STI, otherwise it's
@@ -22,6 +25,7 @@ module ActiveRecord
       def type_condition(table = arel_table)
         super unless mti_table
       end
+
     end
   end
 end

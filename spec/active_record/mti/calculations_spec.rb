@@ -5,47 +5,83 @@ describe ActiveRecord::MTI::Calculations do
     it 'does not continue to adversely affect additional queries' do
       Admin.create(email: 'bob')
       expect { Admin.joins(Transportation::Vehicle).count }.to raise_error(RuntimeError)
-      expect(Thread.current['skip_tableoid_cast']).to_not eq(true)
+      expect(Thread.current[:skip_tableoid_cast]).to_not eq(true)
       expect(Admin.count).to eq(1)
     end
   end
 
-  context "don't project tableoid on" do
-    it 'grouping' do
-      Admin.create(email: 'foo@bar.baz', god_powers: 3)
-      Admin.create(email: 'foo@bar.baz', god_powers: 3)
-      Admin.create(email: 'foo24@bar.baz', god_powers: 3)
+  {
+    Admin => {
+      description: "with table_name explicitly set",
+      table_name: 'admins'
+    },
+    Developer => {
+      description: "without table_name explicitly set",
+      table_name: 'developers'
+    }
+  }.each do |model, meta|
+    context meta[:description] do
+      let!(:user) { User.create(email: 'foo@bar.baz') }
 
-      grouped_count = Admin.group(:email).count
+      context 'when an exception occurs' do
+        it 'does not continue to adversely affect additional queries' do
+          model.create(email: 'bob')
+          expect{ model.joins(Transportation::Vehicle).count }.to raise_error(RuntimeError)
+          expect(Thread.current['skip_tableoid_cast']).to_not eq(true)
+          expect(model.count).to eq(1)
+        end
+      end
 
-      expect(grouped_count['foo24@bar.baz']).to eq(1)
-      expect(grouped_count['foo@bar.baz']).to eq(2)
-    end
+      context "count calculations" do
+        context "when grouped" do
 
-    it 'count calculations' do
-      Admin.create(email: 'foo@bar.baz', god_powers: 3)
-      Admin.create(email: 'foo@bar.baz', god_powers: 3)
-      Admin.create(email: 'foo24@bar.baz', god_powers: 3)
+          it "doesn't project tableoid" do
+            model.create(email: 'foo@bar.baz')
+            model.create(email: 'foo@bar.baz')
+            model.create(email: 'foo24@bar.baz')
 
-      expect(Admin.count(:email)).to eq(3)
-    end
-  end
+            grouped_count = model.group(:email).count
 
-  context 'projects tableoid' do
-    it 'and groups tableoid when selecting :tableoid' do
-      sql = Admin.select(:email, :tableoid).group(:email).to_sql
+            expect(grouped_count['foo24@bar.baz']).to eq(1)
+            expect(grouped_count['foo@bar.baz']).to eq(2)
+            expect(User.all.count).to eq(4)
 
-      expect(sql).to match(/SELECT .*, \"admins\".\"tableoid\" AS tableoid FROM \"admins\"/)
+          end
+        end
 
-      expect(sql).to match(/GROUP BY .*, \"admins\".\"tableoid\"/)
-    end
+        it "count correctly" do
 
-    it 'when grouping :tableoid' do
-      sql = Admin.select(:email).group(:email, :tableoid).to_sql
+          model.create(email: 'foo@bar.baz')
+          model.create(email: 'foo@bar.baz')
+          model.create(email: 'foo24@bar.baz')
 
-      expect(sql).to match(/SELECT .*, \"admins\".\"tableoid\" AS tableoid FROM \"admins\"/)
+          expect(model.count(:email)).to eq(3)
+          expect(User.all.count).to eq(4)
 
-      expect(sql).to match(/GROUP BY .*, \"admins\".\"tableoid\"/)
+        end
+      end
+
+      context "when grouped" do
+        context "with tableoid explicitly" do
+          it "projects tableoid in query" do
+            sql = model.select(:email, :tableoid).group(:email).to_sql
+
+            expect(sql).to match(/SELECT .*, \"#{meta[:table_name]}\".\"tableoid\" AS tableoid FROM \"#{meta[:table_name]}\"/)
+
+            expect(sql).to match(/GROUP BY .*, \"#{meta[:table_name]}\".\"tableoid\"/)
+          end
+        end
+
+        context "without tabloid explicit" do
+          it "projects tableoid in query" do
+            sql = model.select(:email).group(:email, :tableoid).to_sql
+
+            expect(sql).to match(/SELECT .*, \"#{meta[:table_name]}\".\"tableoid\" AS tableoid FROM \"#{meta[:table_name]}\"/)
+
+            expect(sql).to match(/GROUP BY .*, \"#{meta[:table_name]}\".\"tableoid\"/)
+          end
+        end
+      end
     end
   end
 end
