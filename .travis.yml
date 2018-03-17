@@ -1,7 +1,8 @@
 language: ruby
-sudo: false
+sudo: required
 
 cache: bundler
+
 script:
   - bundle exec rspec
 
@@ -15,10 +16,9 @@ rvm:
   - 2.5
   - 2.4
   - 2.3
-  - 2.2
 
 gemfile:
-  - gemfiles/activerecord-edge.Gemfile
+  # - gemfiles/activerecord-edge.Gemfile
   - gemfiles/activerecord-5.1.Gemfile
   - gemfiles/activerecord-5.0.Gemfile
   - gemfiles/activerecord-4.2.Gemfile
