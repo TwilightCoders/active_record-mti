@@ -1,6 +1,7 @@
 require 'active_record/mti/version'
 require 'active_record/mti/railtie' if defined?(Rails::Railtie)
 
+require 'registry'
 require 'active_record/mti/config'
 require 'core_ext/thread'
 
