@@ -40,16 +40,32 @@ module ActiveRecord
               execute %(ALTER TABLE "#{table_name}" ADD PRIMARY KEY ("#{inherited_table_primary_key}"))
 
               indexes(inherited_table).each do |index|
-                attributes = index.to_h.slice(:unique, :using, :where, :orders)
+                attributes = index.to_h.slice(:unique, :using, :where, :orders, :name)
 
                 # Why rails insists on being inconsistant with itself is beyond me.
                 attributes[:order] = attributes.delete(:orders)
+
+                if (index_name = build_index_name(attributes.delete(:name), inherited_table, table_name))
+                  attributes[:name] = index_name
+                end
 
                 add_index table_name, index.columns, attributes
               end
             end
 
             results
+          end
+
+
+          def build_index_name(index_name, inherited_table, table_name)
+            return unless index_name
+            schema_name, index_name = index_name.match(/((?<schema>.*)\.)?(?<index>.*)/).captures
+            if (index_name.match(inherited_table.to_s))
+              index_name.gsub!(inherited_table.to_s, table_name.to_s)
+            else
+              index_name = "#{table_name}/#{index_name}"
+            end
+            [schema_name, index_name].compact.join('.')
           end
 
           # Parent of inherited table
