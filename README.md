@@ -8,7 +8,9 @@
 
 ActiveRecord support for PostgreSQL's native inherited tables (multi-table inheritance)
 
-Compatible with ActiveRecord `4.0`, `4.1`, `4.2`, `5.0`, `5.1`
+**Supports**
+- Ruby: `2.3`, `2.4`, `2.5`
+- ActiveRecord: `4.2`, `5.0`, `5.1`
 
 Confirmed production use in `4.2`
 
