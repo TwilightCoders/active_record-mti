@@ -1,5 +1,12 @@
 # ActiveRecord::MTI
 
+## 0.4.0 _(Unreleased)_
+- Refactored to improve inheritance detection at boot
+- Improved Registry of parent/child tables
+- Simplified a lot of the logic
+- Table naming is now configurable
+- Removed `uses_mti`
+
 ## 0.3.0 _(Unreleased)_
 - Greatly improved future-proofing injection strategy.
   - No longer overwriting (and maintaining) ActiveRecord Calculation sub-routines.
