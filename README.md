@@ -2,7 +2,7 @@
 [![Build Status ](https://travis-ci.org/TwilightCoders/active_record-mti.svg)](https://travis-ci.org/TwilightCoders/active_record-mti)
 [![Code Climate ](https://api.codeclimate.com/v1/badges/27b02e09b5da0a7ed2fc/maintainability)](https://codeclimate.com/github/TwilightCoders/active_record-mti/maintainability)
 [![Test Coverage](https://codeclimate.com/github/TwilightCoders/active_record-mti/badges/coverage.svg)](https://codeclimate.com/github/TwilightCoders/active_record-mti/coverage)
-[![Dependencies ](https://gemnasium.com/badges/github.com/TwilightCoders/active_record-mti.svg)](https://gemnasium.com/github.com/TwilightCoders/active_record-mti)
+[![Dependencies ](https://badges.depfu.com/badges/172a247844f319b45f01f6e941a0e387/count.svg)](https://depfu.com/github/TwilightCoders/active_record-mti)
 
 # ActiveRecord::MTI
 
