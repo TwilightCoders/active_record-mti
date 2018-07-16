@@ -6,10 +6,10 @@ describe ActiveRecord::MTI::SchemaDumper do
   end
 
   let(:hacker_sql) do
-    <<-FOO
+    <<-RUBY
   create_table "admin/hackers", inherits: 'admins' do |t|
   end
-FOO
+    RUBY
   end
 
   it 'does not dump indexes for child table' do

@@ -1,5 +1,6 @@
 module ActiveRecord
   module MTI
-    VERSION = '0.4.0-1'.freeze
+    module TableOID
+    end
   end
 end

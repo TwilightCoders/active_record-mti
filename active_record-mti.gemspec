@@ -1,7 +1,4 @@
-
-lib = File.expand_path('../lib', __FILE__)
-$LOAD_PATH.unshift(lib) unless $LOAD_PATH.include?(lib)
-require 'active_record/mti/version'
+require_relative 'lib/active_record/mti/version'
 
 Gem::Specification.new do |spec|
   spec.name          = 'active_record-mti'
@@ -14,13 +11,9 @@ Gem::Specification.new do |spec|
   spec.homepage      = 'https://github.com/twilightcoders/active_record-mti'
   spec.license       = 'MIT'
 
-  if spec.respond_to?(:metadata)
-    spec.metadata['allowed_push_host'] = 'https://rubygems.org'
-  else
-    raise 'RubyGems 2.0 or newer is required to protect against public gem pushes.'
-  end
+  spec.metadata['allowed_push_host'] = 'https://rubygems.org'
 
-  spec.files         = `git ls-files -z`.split("\x0")
+  spec.files         = Dir['CHANGELOG.md', 'README.md', 'LICENSE', 'lib/**/*']
   spec.bindir        = 'bin'
   spec.executables   = spec.files.grep(%r{^bin/}) { |f| File.basename(f) }
   spec.test_files    = spec.files.grep(%r{^(test|spec|features)/})

@@ -10,7 +10,7 @@ describe ActiveRecord::MTI::Inheritance do
 
       expect(Admin.mti_table).to be_present
       expect(Admin.mti_table.oid).to be_present
-      expect(Admin.mti_table.name).to eq('admins')
+      expect(Admin.mti_table.name).to eq('user/admins')
       expect(Admin.mti_table.parent_table_name).to eq('users')
 
       expect(Transportation::Truck.mti_table).to be_present

@@ -11,14 +11,35 @@ module ActiveRecord
         ::ActiveRecord::MTI.registry[record['tableoid']] || super
       end
 
-      def reset_table_name #:nodoc:
-          @table_name = nil
-          self.table_name = reset_mti_table&.name || superclass.table_name || super
-      end
+      # def reset_table_name #:nodoc:
+      #   @table_name = nil
+      #   self.table_name = compute_table_name || super
+      # end
 
       def compute_table_name
-        mti_table&.name || super
+        mti_table&.name || superclass.mti_table&.name || super
       end
+
+      # def compute_table_name
+      #   if self != base_class
+      #     # Nested classes are prefixed with singular parent table name.
+      #     if superclass < Base && !superclass.abstract_class?
+      #       contained = superclass.table_name
+      #       contained = contained.singularize if superclass.pluralize_table_names
+      #       contained += '/'
+      #     end
+
+      #     potential_table_name = "#{full_table_name_prefix}#{contained}#{decorated_table_name(name)}#{full_table_name_suffix}"
+
+      #     if check_inheritance_of(potential_table_name)
+      #       potential_table_name
+      #     else
+      #       superclass.table_name
+      #     end
+      #   else
+      #     super
+      #   end
+      # end
 
       # Type condition only applies if it's STI, otherwise it's
       # done for free by querying the inherited table in MTI

@@ -1,8 +1,9 @@
 require 'active_record/mti/version'
 require 'active_record/mti/railtie' if defined?(Rails::Railtie)
 
-require 'registry'
+require 'active_registry'
 require 'active_record/mti/config'
+require 'active_record/mti/table'
 require 'core_ext/thread'
 
 module ActiveRecord
@@ -68,7 +69,7 @@ module ActiveRecord
     self.oid_class = self.find_oid_class
 
     def self.create_registry(klass, sql)
-      Registry.new(ActiveRecord::Base.connection.execute(sql).to_a.map do |row|
+      ActiveRegistry.new(ActiveRecord::Base.connection.execute(sql).to_a.map do |row|
         klass.new(*row.values).freeze
       end)
     end

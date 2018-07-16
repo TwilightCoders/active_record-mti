@@ -11,6 +11,10 @@ describe ActiveRecord::MTI::Inheritance do
       Developer => {
         description: "with unset table_name",
         table_name: 'developers'
+      },
+      SuperAdmin => {
+        description: "mti branch with sti leaf",
+        table_name: 'admins'
       }
     }.each do |model, meta|
       context meta[:description] do
@@ -36,6 +40,14 @@ describe ActiveRecord::MTI::Inheritance do
         describe 'base class querying' do
           it 'casts children properly' do
             users = User.all
+            expect(users.select{ |u| u.is_a?(model) }.count).to eql(1)
+          end
+        end
+
+        describe 'prime class querying' do
+          it 'casts children properly' do
+            users = model.all
+            # binding.pry
             expect(users.select{ |u| u.is_a?(model) }.count).to eql(1)
           end
         end
