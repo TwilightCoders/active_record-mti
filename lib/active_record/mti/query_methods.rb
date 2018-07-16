@@ -1,19 +1,36 @@
 module ActiveRecord
   module MTI
     module QueryMethods
+      SINGLE_VALUE_METHODS = [:group_by_tableoid, :select_by_tableoid]
+
+      SINGLE_VALUE_METHODS.each do |name|
+        class_eval <<~RUBY, __FILE__, __LINE__ + 1
+          def #{name}_value                    # def readonly_value
+            @values[:#{name}]                  #   @values[:readonly]
+          end                                  # end
+
+          def #{name}_value=(value)            # def readonly_value=(value)
+            assert_mutability!                 #   assert_mutability!
+            @values[:#{name}] = value          #   @values[:readonly] = value
+          end                                  # end
+        RUBY
+      end
 
       def build_arel
-        select_by_tableoid = select_values.delete(:tableoid) == :tableoid
-        group_by_tableoid = group_values.delete(:tableoid) == :tableoid
+        self.select_by_tableoid_value = select_values.delete(:tableoid) || tableoid?(klass)
+        self.group_by_tableoid_value = group_values.delete(:tableoid)
 
-        arel = super
-
-        if tableoid?(@klass) || group_by_tableoid || select_by_tableoid
-          arel.project(tableoid_project(@klass))
-          arel.group(tableoid_group(@klass)) if group_values.any? || group_by_tableoid
+        super.tap do |arel|
+          if group_by_tableoid_value || (select_by_tableoid_value && group_values.any?)
+            arel.group(tableoid_group(@klass))
+          end
         end
+      end
 
-        arel
+      def build_select(arel)
+        super.tap do |arel|
+          arel.project(tableoid_project(@klass)) if (group_by_tableoid_value || select_by_tableoid_value)
+        end
       end
 
       private
@@ -21,7 +38,7 @@ module ActiveRecord
       def tableoid?(klass)
         !Thread.current['skip_tableoid_cast'] &&
         klass.using_multi_table_inheritance? &&
-        klass.has_tableoid_column?
+        klass.mti_type_column
       end
 
       def tableoid_project(klass)
