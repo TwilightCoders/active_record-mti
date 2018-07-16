@@ -1,6 +1,10 @@
 # ActiveRecord::MTI
 
-## 0.3.0 _(July 15th 2018)_
+## 0.3.2 _(July 15th 2018)_
+- 0.3.1 Yanked due to failing specs in spec matrix
+- Fixed issue causing fails
+
+## 0.3.1 ~_(July 15th 2018)_~ YANKED
 - Greatly improved future-proofing injection strategy.
   - No longer overwriting (and maintaining) ActiveRecord Calculation sub-routines.
   - Improve order of grouping and projection so other gems have more information to work with. (Like [`DeletedAt`](https://github.com/TwilightCoders/deleted_at))

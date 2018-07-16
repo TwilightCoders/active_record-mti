@@ -13,7 +13,7 @@ module ActiveRecord
         end
       end
 
-      def build_select(arel)
+      def build_select(*args)
         super.tap do |arel|
           arel.project(tableoid_project(@klass)) if (@group_by_tableoid || @select_by_tableoid)
         end
