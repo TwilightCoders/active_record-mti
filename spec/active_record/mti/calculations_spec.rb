@@ -13,7 +13,7 @@ describe ActiveRecord::MTI::Calculations do
   {
     Admin => {
       description: "with table_name explicitly set",
-      table_name: 'admins'
+      table_name: 'user/admins'
     },
     Developer => {
       description: "without table_name explicitly set",

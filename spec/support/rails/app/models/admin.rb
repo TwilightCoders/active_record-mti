@@ -1,3 +1,3 @@
 class Admin < User
-  self.table_name = 'admins'
+  self.table_name = 'user/admins'
 end

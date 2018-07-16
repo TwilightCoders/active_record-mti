@@ -6,6 +6,7 @@ module ActiveRecord
     module ConnectionAdapters
       module PostgreSQL
         module SchemaStatements
+
           # Creates a new table with the name +table_name+. +table_name+ may either
           # be a String or a Symbol.
           #
@@ -20,12 +21,6 @@ module ActiveRecord
             if options[:inherits]
               options[:id] = false
               options.delete(:primary_key)
-            end
-
-            if (schema = options.delete(:schema))
-              # If we specify a schema then we only create it if it doesn't exist
-              # and we only force create it if only the specific schema is in the search path
-              table_name = %("#{schema}"."#{table_name}")
             end
 
             if (inherited_table = options.delete(:inherits))

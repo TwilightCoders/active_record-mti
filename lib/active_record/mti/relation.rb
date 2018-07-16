@@ -2,7 +2,8 @@ require 'active_support/core_ext/object/blank'
 
 module ActiveRecord
   module MTI
-    module QueryMethods
+    module Relation
+
       def build_arel
         select_by_tableoid = select_values.delete(:tableoid) == :tableoid
         group_by_tableoid = group_values.delete(:tableoid) == :tableoid
@@ -16,6 +17,12 @@ module ActiveRecord
       end
 
       private
+
+      def perform_calculation(*)
+        Thread.reverb(:skip_tableoid_cast, true) do
+          super
+        end
+      end
 
       def tableoid?
         !Thread.current[:skip_tableoid_cast] && klass.mti_table.present?

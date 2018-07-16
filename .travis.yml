@@ -3,6 +3,10 @@ sudo: required
 
 cache: bundler
 
+before_install:
+  - gem update --system
+  - gem install bundler
+
 before_script:
   - curl -L https://codeclimate.com/downloads/test-reporter/test-reporter-latest-linux-amd64 > ./cc-test-reporter
   - chmod +x ./cc-test-reporter
@@ -15,7 +19,7 @@ after_script:
   - ./cc-test-reporter after-build --exit-code $TRAVIS_TEST_RESULT
 
 addons:
-  postgresql: "9.3"
+  postgresql: 9.3
 
 rvm:
   - 2.5
