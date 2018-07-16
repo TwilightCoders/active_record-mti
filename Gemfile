@@ -4,6 +4,8 @@ gemspec
 
 group :test do
 
+  gem 'pry'
+
   # Generates coverage stats of specs
   gem 'simplecov'
 

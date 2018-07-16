@@ -1,8 +1,9 @@
 # ActiveRecord::MTI
 
-## 0.3.0 _(Unreleased)_
+## 0.3.0 _(July 15th 2018)_
 - Greatly improved future-proofing injection strategy.
   - No longer overwriting (and maintaining) ActiveRecord Calculation sub-routines.
+  - Improve order of grouping and projection so other gems have more information to work with. (Like [`DeletedAt`](https://github.com/TwilightCoders/deleted_at))
 - Instead of injecting at `build_select`, we're injecting at `build_arel` with one additional new sub-routine (`build_mti`)
   - `build_mti` sub-routine detects if an MTI projection is needed based on grouping and selecting from query being built.
 - No longer need to use `uses_mti`

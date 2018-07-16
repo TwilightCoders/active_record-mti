@@ -3,17 +3,20 @@ module ActiveRecord
     module QueryMethods
 
       def build_arel
-        select_by_tableoid = select_values.delete(:tableoid) == :tableoid
-        group_by_tableoid = group_values.delete(:tableoid) == :tableoid
+        @select_by_tableoid = [select_values.delete(:tableoid), tableoid?(klass)].compact.first
+        @group_by_tableoid = group_values.delete(:tableoid)
 
-        arel = super
-
-        if tableoid?(@klass) || group_by_tableoid || select_by_tableoid
-          arel.project(tableoid_project(@klass))
-          arel.group(tableoid_group(@klass)) if group_values.any? || group_by_tableoid
+        super.tap do |arel|
+          if @group_by_tableoid || (@select_by_tableoid && group_values.any?)
+            arel.group(tableoid_group(@klass))
+          end
         end
+      end
 
-        arel
+      def build_select(arel)
+        super.tap do |arel|
+          arel.project(tableoid_project(@klass)) if (@group_by_tableoid || @select_by_tableoid)
+        end
       end
 
       private
@@ -21,7 +24,7 @@ module ActiveRecord
       def tableoid?(klass)
         !Thread.current['skip_tableoid_cast'] &&
         klass.using_multi_table_inheritance? &&
-        klass.has_tableoid_column?
+        klass.mti_type_column
       end
 
       def tableoid_project(klass)
