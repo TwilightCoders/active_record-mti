@@ -1,6 +1,6 @@
 require 'spec_helper'
 
-describe ActiveRecord::MTI::QueryMethods do
+describe ActiveRecord::MTI::Relation do
   context 'queries' do
     it 'select tableoid' do
       sql = User.all.to_sql

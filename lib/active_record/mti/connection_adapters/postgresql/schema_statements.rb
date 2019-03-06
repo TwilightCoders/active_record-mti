@@ -35,7 +35,7 @@ module ActiveRecord
               execute %(ALTER TABLE "#{table_name}" ADD PRIMARY KEY ("#{inherited_table_primary_key}"))
 
               indexes(inherited_table).each do |index|
-                attributes = index.to_h.slice(:unique, :using, :where, :orders, :name)
+                attributes = index_attributes(index)
 
                 # Why rails insists on being inconsistant with itself is beyond me.
                 attributes[:order] = attributes.delete(:orders)
@@ -51,6 +51,13 @@ module ActiveRecord
             results
           end
 
+          def index_attributes(index)
+            [:unique, :using, :where, :orders, :name].inject({}) do |hash, attribute|
+              hash.tap do |h|
+                h[attribute] = index.send(attribute)
+              end
+            end
+          end
 
           def build_index_name(index_name, inherited_table, table_name)
             return unless index_name

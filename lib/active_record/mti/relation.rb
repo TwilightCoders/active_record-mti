@@ -4,7 +4,31 @@ module ActiveRecord
   module MTI
     module Relation
 
-      def build_arel
+      # Consider using a join to avoid complicated selects?
+      # Maybe each "mti" belongs_to :mti_table foreign_key: :tableoid?
+      # SELECT p.relname, c.name, c.altitude
+      # FROM cities c, pg_class p
+      # WHERE c.altitude > 500 AND c.tableoid = p.oid;
+
+
+      # TODO: Introduce natural joins
+      # https://dba.stackexchange.com/questions/94050/query-parent-table-and-get-child-tables-columns
+      # EXPLAIN ANALYSE SELECT * FROM ONLY listeners NATURAL FULL JOIN "listeners/bridge/all";
+
+      # EXPLAIN ANALYSE SELECT * FROM "listeners/bridge/all";
+
+      # EXPLAIN ANALYSE SELECT * FROM listeners;
+
+      # EXPLAIN ANALYSE SELECT * FROM ONLY listeners
+      #   NATURAL FULL JOIN "listeners/bridge/all"
+      #   NATURAL FULL JOIN "listeners/integration/all"
+      #   NATURAL FULL JOIN "listeners/nest_thermostat/all"
+      #   NATURAL FULL JOIN "listeners/sensor/all"
+      #   NATURAL FULL JOIN "listeners/system/all"
+      #   NATURAL FULL JOIN "listeners/system_users/all"
+      #   NATURAL FULL JOIN "listeners/user/all";
+
+      def build_arel(*)
         select_by_tableoid = select_values.delete(:tableoid) == :tableoid
         group_by_tableoid = group_values.delete(:tableoid) == :tableoid
 
@@ -15,6 +39,14 @@ module ActiveRecord
           end
         end
       end
+
+      # def exclusively(tables=[klass])
+      #   @table = table.dup.tap do |t|
+      #     t.only!
+      #   end
+      #   binding.pry
+      #   self
+      # end
 
       private
 

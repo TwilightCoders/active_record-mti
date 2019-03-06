@@ -1,6 +1,6 @@
 require 'spec_helper'
 
-describe ActiveRecord::MTI::Calculations do
+describe ActiveRecord::MTI::Relation do
   context 'when an exception occurs' do
     it 'does not continue to adversely affect additional queries' do
       Admin.create(email: 'bob')
@@ -17,7 +17,7 @@ describe ActiveRecord::MTI::Calculations do
     },
     Developer => {
       description: "without table_name explicitly set",
-      table_name: 'developers'
+      table_name: 'user/developers'
     }
   }.each do |model, meta|
     context meta[:description] do

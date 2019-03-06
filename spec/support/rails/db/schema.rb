@@ -22,18 +22,6 @@ ActiveRecord::Schema.define do
     t.integer :level
   end
 
-  create_table "user_managers", force: true, inherits: :users do |t|
-    t.integer :level
-  end
-
-  create_table "users/managers", force: true, inherits: :users do |t|
-    t.integer :level
-  end
-
-  create_table "managers", force: true, inherits: :users do |t|
-    t.integer :level
-  end
-
   create_table 'user/admin/hackers', force: true, inherits: 'user/admins' do |t|
     t.integer :god_powers
   end
@@ -65,7 +53,7 @@ ActiveRecord::Schema.define do
     t.timestamps null: false
   end
 
-  create_table 'vehicles/trucks', force: true, inherits: :vehicles do |t|
+  create_table 'vehicle/trucks', force: true, inherits: :vehicles do |t|
     t.integer :bed_size
   end
 end
