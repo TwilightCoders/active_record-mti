@@ -69,6 +69,11 @@ module ActiveRecord
           # initialize_find_by_cache
         end
 
+        # def exclusively(tables=[self])
+        #   all.tap do |ar|
+        #     ar.exclusively(tables)
+        #   end
+        # end
 
         def mti_table=(value)
           if defined?(@mti_table)
@@ -136,6 +141,14 @@ module ActiveRecord
           c = superclass.respond_to?(:descends_from_active_record?) ? superclass.descends_from_active_record? : true
           # !(a || b || c) || !(!b || c) || (a && b && c)
           (!a && !b && c) || b
+
+          # if self == Base
+          #   false
+          # elsif superclass.abstract_class?
+          #   superclass.descends_from_active_record?
+          # else
+          #   superclass == Base || !columns_hash.include?(inheritance_column)
+          # end
         end
 
         # Called by +instantiate+ to decide which class to use for a new
@@ -151,6 +164,11 @@ module ActiveRecord
 
         # Type condition only applies if it's STI, otherwise it's
         # done for free by querying the inherited table in MTI
+        # def type_condition(table = arel_table)
+        #   binding.pry
+        #   mti_table ? nil : super
+        #   # super unless mti_table
+        # end
 
       protected
 
