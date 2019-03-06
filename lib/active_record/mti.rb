@@ -1,22 +1,11 @@
 require 'active_record/mti/version'
-
-require 'active_support/all'
-
-require 'active_record'
-require 'active_record/connection_handling'
-
-require 'core_ext/hash'
-
-require 'active_record/mti/schema_dumper'
-require 'active_record/mti/registry'
-require 'active_record/mti/inheritance'
-require 'active_record/mti/model_schema'
-require 'active_record/mti/query_methods'
-require 'active_record/mti/calculations'
-require 'active_record/mti/connection_adapters/postgresql/schema_statements'
-require 'active_record/mti/connection_adapters/postgresql/adapter'
-
 require 'active_record/mti/railtie' if defined?(Rails::Railtie)
+
+require 'active_registry'
+require 'active_record/mti/config'
+require 'active_record/mti/table'
+require 'core_ext/thread'
+require 'core_ext/array'
 
 module ActiveRecord
   module MTI
@@ -24,36 +13,51 @@ module ActiveRecord
     # Rails likes to make breaking changes in it's minor versions (like 4.1 - 4.2) :P
     mattr_accessor :oid_class
 
-    class << self
-      attr_writer :logger
-
-      def logger
-        @logger ||= Logger.new($stdout).tap do |log|
-          log.progname = self.name
-          log.level = Logger::INFO
-        end
+    def self.child_tables
+      @child_tables ||= create_registry(ChildTable, SQL_FOR_CHILD_TABLES).tap do |r|
+        r.index(:name, :oid, :inhparent)
       end
     end
 
-    def self.root
-      @root ||= Pathname.new(File.expand_path('../../', File.dirname(__FILE__)))
+    def self.parent_tables
+      @parent_tables ||= create_registry(ParentTable, SQL_FOR_PARENT_TABLES).tap do |r|
+        r.index(:oid, :name)
+      end
     end
 
-    def self.load
-      ::ActiveRecord::Base.send                                  :prepend, ModelSchema
-      ::ActiveRecord::Base.send                                  :prepend, Inheritance
-      ::ActiveRecord::Relation.send                              :prepend, QueryMethods
-      ::ActiveRecord::Relation.send                              :prepend, Calculations
-      ::ActiveRecord::ConnectionAdapters::PostgreSQLAdapter.send :prepend, ConnectionAdapters::PostgreSQL::Adapter
-      ::ActiveRecord::ConnectionAdapters::PostgreSQLAdapter.send :prepend, ConnectionAdapters::PostgreSQL::SchemaStatements
-      ::ActiveRecord::SchemaDumper.send                          :prepend, SchemaDumper
+    def self.postgresql_version
+      @postgresql_version ||= Gem::Version.new(ActiveRecord::Base.connection.execute(<<-SQL, 'SCHEMA').to_a.first['server_version'])
+        SHOW server_version;
+      SQL
     end
 
-    def self.testify(value)
-      value == true || value == 't' || value == 1 || value == '1'
+    def self.[](key)
+      registry[key]
+    end
+
+    def self.[]=(key, value)
+      if (self[key] && value != nil)
+        raise "Already assigned"
+      else
+        registry[key]=value
+      end
+    end
+
+    def self.add_tableoid_attribute(klass)
+      if klass.respond_to? :attribute
+        klass.attribute :tableoid, ActiveRecord::MTI.oid_class.new
+      else
+        new_column = ActiveRecord::ConnectionAdapters::PostgreSQLColumn.new('tableoid', nil, ActiveRecord::MTI.oid_class.new, "oid", false)
+        klass.columns.unshift new_column
+        klass.columns_hash['tableoid'] = new_column
+      end
     end
 
     private
+
+    def self.registry
+      @registry ||= {}
+    end
 
     mattr_accessor :oid_class_candidates
 
@@ -77,5 +81,28 @@ module ActiveRecord
 
     self.oid_class = self.find_oid_class
 
+    def self.create_registry(klass, sql)
+      ActiveRegistry.new(ActiveRecord::Base.connection.execute(sql).to_a.map do |row|
+        klass.new(*row.values).freeze
+      end)
+    end
+
+    ChildTable  = Struct.new(:inhrelid, :inhparent, :inhseqno, :oid, :name, :parent_table_name)
+    ParentTable = Struct.new(:oid, :name)
+
+    SQL_FOR_CHILD_TABLES = (<<-SQL).gsub(/\s+/, " ").strip
+      SELECT "pg_inherits".*, "child".oid AS oid, "child".relname AS name, "parent".relname AS parent_table_name
+        FROM "pg_inherits"
+        JOIN "pg_class" AS "child" ON ("child".oid = "pg_inherits".inhrelid)
+        JOIN "pg_class" AS "parent" ON ("parent".oid = "pg_inherits".inhparent)
+    SQL
+
+    SQL_FOR_PARENT_TABLES = (<<-SQL).gsub(/\s+/, " ").strip
+      SELECT DISTINCT("pg_class".oid) AS oid, "pg_class".relname AS name
+        FROM "pg_class", "pg_inherits"
+        WHERE "pg_class".oid = "pg_inherits".inhparent
+    SQL
+
+    private_constant :ChildTable, :ParentTable, :SQL_FOR_CHILD_TABLES, :SQL_FOR_PARENT_TABLES
   end
 end

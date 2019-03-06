@@ -1,7 +1,6 @@
 ActiveRecord::Schema.define do
-
   enable_extension 'pgcrypto'
-  enable_extension "uuid-ossp"
+  enable_extension 'uuid-ossp'
 
   self.verbose = false
 
@@ -10,11 +9,20 @@ ActiveRecord::Schema.define do
     t.timestamps null: false
   end
 
-  create_table :admins, force: true, inherits: :users do |t|
+  create_table 'user/admins', force: true, inherits: :users do |t|
     t.integer :god_powers
+    t.string :type
   end
 
-  create_table 'admin/hackers', force: true, inherits: :admins do |t|
+  create_table 'user/developers', force: true, inherits: :users do |t|
+    t.integer :commits
+  end
+
+  create_table "user/managers", force: true, inherits: :users do |t|
+    t.integer :level
+  end
+
+  create_table 'user/admin/hackers', force: true, inherits: 'user/admins' do |t|
     t.integer :god_powers
   end
 
@@ -45,7 +53,7 @@ ActiveRecord::Schema.define do
     t.timestamps null: false
   end
 
-  create_table "vehicles/trucks", force: true, inherits: :vehicles do |t|
+  create_table 'vehicle/trucks', force: true, inherits: :vehicles do |t|
     t.integer :bed_size
   end
 end

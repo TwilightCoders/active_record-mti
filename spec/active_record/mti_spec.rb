@@ -2,23 +2,30 @@ require 'spec_helper'
 
 describe ActiveRecord::MTI do
 
-  context 'helper' do
+  describe "#child_tables" do
+    it "returns an array of child tables" do
+      # Sort the tables by name to not depend on the order
+      child_tables = ActiveRecord::MTI.child_tables.sort_by(&:name)
 
-    describe '#testify' do
-      it "returns true for truthy values" do
-        expect(ActiveRecord::MTI.testify('f')).to eq(false)
-      end
+      expect(child_tables[0].name).to eq('user/admin/hackers')
+      expect(child_tables[0].parent_table_name).to eq('user/admins')
+
+      expect(child_tables[1].name).to eq('user/admins')
+      expect(child_tables[1].parent_table_name).to eq('users')
+
+      expect(child_tables[2].name).to eq('user/developers')
+      expect(child_tables[2].parent_table_name).to eq('users')
     end
-
-    it "root has the right value" do
-      expect(ActiveRecord::MTI.root).not_to be_nil
-    end
-
-    it "recovers if oid class candidate is not constantizable" do
-      ActiveRecord::MTI.oid_class_candidates.unshift("IDontExist")
-      expect(ActiveRecord::MTI.find_oid_class).not_to be_nil
-    end
-
   end
 
+  describe "#parent_tables" do
+    it "returns an array of child tables" do
+      # Sort the tables by name to not depend on the order
+      parent_tables = ActiveRecord::MTI.parent_tables.sort_by(&:name)
+
+      expect(parent_tables[0].name).to eq('user/admins')
+      expect(parent_tables[1].name).to eq('users')
+      expect(parent_tables[2].name).to eq('vehicles')
+    end
+  end
 end

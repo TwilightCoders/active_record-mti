@@ -1,16 +1,16 @@
 # ActiveRecord::MTI
 
-## 0.3.2 _(July 15th 2018)_
-- 0.3.1 Yanked due to failing specs in spec matrix
-- Fixed issue causing fails
-
-## 0.3.1 ~_(July 15th 2018)_~ YANKED
-- Greatly improved future-proofing injection strategy.
+## 0.4.0 _(Unreleased)_
+- Refactored to improve inheritance detection at boot
+  - Checks mti_table_name for table presence, falls back to regular table_name
+  - Doesn't trample as much naming
+  - Registry of parent/child tables
+  - improved future-proofing injection strategy.
+- Simplified the query logic
   - No longer overwriting (and maintaining) ActiveRecord Calculation sub-routines.
-  - Improve order of grouping and projection so other gems have more information to work with. (Like [`DeletedAt`](https://github.com/TwilightCoders/deleted_at))
-- Instead of injecting at `build_select`, we're injecting at `build_arel` with one additional new sub-routine (`build_mti`)
+  - Instead of injecting at `build_select`, we're injecting at `build_arel` with `build_mti` wrapper sub-routine
   - `build_mti` sub-routine detects if an MTI projection is needed based on grouping and selecting from query being built.
-- No longer need to use `uses_mti`
+- Removed `uses_mti`
 
 ## 0.2.1 _(September 20th 2017)_
 - More reliable class discrimination

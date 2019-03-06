@@ -1,6 +1,4 @@
-class User < ::ActiveRecord::Base
-
+class User < ApplicationRecord
   has_many :posts
   has_many :comments
-
 end
