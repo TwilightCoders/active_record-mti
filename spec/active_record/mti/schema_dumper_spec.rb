@@ -6,9 +6,8 @@ describe ActiveRecord::MTI::SchemaDumper do
   end
 
   let(:hacker_sql) do
-    <<-RUBY
-  create_table "admin/hackers", inherits: 'admins' do |t|
-  end
+    <<~RUBY
+      create_table "user/admin/hackers", inherits: 'user/admins' do |t|
     RUBY
   end
 

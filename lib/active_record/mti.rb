@@ -5,6 +5,7 @@ require 'active_registry'
 require 'active_record/mti/config'
 require 'active_record/mti/table'
 require 'core_ext/thread'
+require 'core_ext/array'
 
 module ActiveRecord
   module MTI
@@ -30,8 +31,16 @@ module ActiveRecord
       SQL
     end
 
-    def self.registry
-      @registry ||= {}
+    def self.[](key)
+      registry[key]
+    end
+
+    def self.[]=(key, value)
+      if (self[key] && value != nil)
+        raise "Already assigned"
+      else
+        registry[key]=value
+      end
     end
 
     def self.add_tableoid_attribute(klass)
@@ -45,6 +54,10 @@ module ActiveRecord
     end
 
     private
+
+    def self.registry
+      @registry ||= {}
+    end
 
     mattr_accessor :oid_class_candidates
 

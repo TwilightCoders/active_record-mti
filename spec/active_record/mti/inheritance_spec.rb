@@ -1,20 +1,20 @@
 require 'spec_helper'
 
-describe ActiveRecord::MTI::Inheritance do
+describe ActiveRecord::MTI::CoreExtension do
 
   context "models that use MTI" do
     {
       Admin => {
         description: "with set table_name",
-        table_name: 'admins'
+        table_name: 'user/admins'
       },
       Developer => {
         description: "with unset table_name",
-        table_name: 'developers'
+        table_name: 'user/developers'
       },
       SuperAdmin => {
-        description: "mti branch with sti leaf",
-        table_name: 'admins'
+        description: "MTI branch with STI leaf",
+        table_name: 'user/admins'
       }
     }.each do |model, meta|
       context meta[:description] do
@@ -38,7 +38,11 @@ describe ActiveRecord::MTI::Inheritance do
         end
 
         describe 'base class querying' do
-          it 'casts children properly' do
+          # Reenable when MTI can join/union extra columns (natural join?) from child-tables:
+          # `users` doesn't have `type`, but `admins` does, and thus needed to descriminate
+          # between `SuperAdmin`s
+
+          xit 'casts children properly' do
             users = User.all
             expect(users.select{ |u| u.is_a?(model) }.count).to eql(1)
           end
@@ -47,16 +51,11 @@ describe ActiveRecord::MTI::Inheritance do
         describe 'prime class querying' do
           it 'casts children properly' do
             users = model.all
-            # binding.pry
             expect(users.select{ |u| u.is_a?(model) }.count).to eql(1)
           end
         end
 
         context 'class definition' do
-
-          it 'has non-nil mti_table' do
-            expect(model.mti_table).to_not be_nil
-          end
 
           it "doesn't check inheritance multiple times" do
             # Due to the anonymous class ("god = Class.new(model)") rspec can't properly distinquish
@@ -96,35 +95,49 @@ describe ActiveRecord::MTI::Inheritance do
     end
   end
 
-  describe 'custom inheritance_column model' do
-    let!(:vehicle) { Transportation::Vehicle.create(color: :red) }
-    let!(:truck) { Transportation::Truck.create(color: :blue, bed_size: 10) }
+  describe 'a model that mixes MTI and STI' do
+
+    it 'should set the table_name correctly' do
+
+      expect(Transportation::Truck.table_name).to eq("vehicle/trucks")
+
+    end
 
     describe 'inheritance_column' do
+      let!(:vehicle) { Transportation::Vehicle.create(color: :red) }
+      let!(:truck) { Transportation::Truck.create(color: :blue, bed_size: 10) }
+      let!(:pickup) { Transportation::Pickup.create(color: :silver, bed_size: 10) }
+
       it 'should set the custom column correctly' do
         expect(truck.type).to eql('Transportation::Truck')
       end
-    end
 
-    describe 'base class querying' do
-      it 'casts children properly' do
-        expect(Transportation::Vehicle.all.select { |v| v.is_a?(Transportation::Truck) }.count).to eql(1)
+      context 'base class querying' do
+        it 'casts children properly' do
+          all_vehicles = Transportation::Vehicle.all
+          only_trucks = all_vehicles.select { |v| v.is_a?(Transportation::Truck) }
+          only_pickups = all_vehicles.select { |v| v.is_a?(Transportation::Pickup) }
+
+          expect(only_trucks.count).to eql(2)
+          expect(only_pickups.count).to eql(1)
+        end
+
+        xit 'deserializes children with child specific data' do
+          my_truck = Transportation::Vehicle.find(truck.id)
+          expect(my_truck.bed_size).to eql(10)
+        end
       end
 
-      xit 'deserializes children with child specific data' do
-        my_truck = Transportation::Vehicle.find(truck.id)
-        expect(my_truck.bed_size).to eql(10)
-      end
-    end
+      context 'has the correct count for' do
+        it 'parents' do
+          expect(Transportation::Vehicle.count).to eql(3)
+        end
 
-    describe 'has the correct count for' do
-      it 'parents' do
-        expect(Transportation::Vehicle.count).to eql(2)
+        it 'children' do
+          expect(Transportation::Truck.count).to eql(2)
+        end
       end
 
-      it 'children' do
-        expect(Transportation::Truck.count).to eql(1)
-      end
     end
   end
 end
