@@ -1,38 +1,43 @@
 language: ruby
-sudo: false
+sudo: required
 
 cache: bundler
+
+before_install:
+  - gem update --system
+  - gem install bundler
+
+before_script:
+  - curl -L https://codeclimate.com/downloads/test-reporter/test-reporter-latest-linux-amd64 > ./cc-test-reporter
+  - chmod +x ./cc-test-reporter
+  - ./cc-test-reporter before-build
+
 script:
   - bundle exec rspec
 
-after_success:
-  - bundle exec codeclimate-test-reporter
+after_script:
+  - ./cc-test-reporter after-build --exit-code $TRAVIS_TEST_RESULT
 
 addons:
-  postgresql: "9.3"
+  postgresql: 9.5
 
 rvm:
+  - 2.6
+  - 2.5
   - 2.4
   - 2.3
-  - 2.2
-  - 2.1
 
 gemfile:
+  - gemfiles/activerecord-edge.Gemfile
+  - gemfiles/activerecord-5.2.Gemfile
   - gemfiles/activerecord-5.1.Gemfile
   - gemfiles/activerecord-5.0.Gemfile
   - gemfiles/activerecord-4.2.Gemfile
-  - gemfiles/activerecord-4.1.Gemfile
-  - gemfiles/activerecord-4.0.Gemfile
 
 matrix:
+  allow_failures:
+  - gemfile: gemfiles/activerecord-edge.Gemfile
+
   exclude:
-
-  - rvm: 2.1
-    gemfile: gemfiles/activerecord-5.0.Gemfile
-  - rvm: 2.1
-    gemfile: gemfiles/activerecord-5.1.Gemfile
-
-  - rvm: 2.4
-    gemfile: gemfiles/activerecord-4.0.Gemfile
-  - rvm: 2.4
-    gemfile: gemfiles/activerecord-4.1.Gemfile
+  - rvm: 2.6
+    gemfile: gemfiles/activerecord-4.2.Gemfile
