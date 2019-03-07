@@ -5,22 +5,39 @@ module ActiveRecord
     module Relation
 
       def build_arel(*)
-        select_by_tableoid = select_values.delete(:tableoid) == :tableoid
-        group_by_tableoid = group_values.delete(:tableoid) == :tableoid
-
         super.tap do |arel|
-          if tableoid? || group_by_tableoid || select_by_tableoid
-            arel.project(tableoid_project(klass))
-            arel.group(tableoid_group(klass)) if group_values.any? || group_by_tableoid
-          end
+          build_mti(arel)
         end
       end
 
       private
 
+      def build_mti(arel)
+        if tableoid? || group_by_tableoid? || select_by_tableoid?
+          arel.project(tableoid_project(klass))
+          arel.group(tableoid_group(klass)) if group_values.any? || group_by_tableoid?
+        end
+      end
+
       def perform_calculation(*)
         Thread.reverb(:skip_tableoid_cast, true) do
           super
+        end
+      end
+
+      def select_by_tableoid?
+        @select_by_tableoid = if defined?(@select_by_tableoid)
+          @select_by_tableoid
+        else
+          select_values.delete(:tableoid) == :tableoid
+        end
+      end
+
+      def group_by_tableoid?
+        @group_by_tableoid = if defined?(@group_by_tableoid)
+          @group_by_tableoid
+        else
+          group_values.delete(:tableoid) == :tableoid
         end
       end
 
