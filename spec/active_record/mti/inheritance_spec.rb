@@ -24,7 +24,7 @@ describe ActiveRecord::MTI::CoreExtension do
         it "creates a column even if class doesn't respond to :attribute" do
           allow(model).to receive(:respond_to?).with(:attribute).and_return(false)
 
-          ActiveRecord::MTI.registry[model] = nil
+          ActiveRecord::MTI[model] = nil
 
           expect(model.sti_or_mti?).to eq(true)
         end

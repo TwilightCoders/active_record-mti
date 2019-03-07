@@ -14,6 +14,9 @@ ActiveRecord::Schema.define do
     t.string :type
   end
 
+  create_table 'admin/fakes', force: true, inherits: 'user/admins' do |t|
+  end
+
   create_table 'user/developers', force: true, inherits: :users do |t|
     t.integer :commits
   end

@@ -2,7 +2,6 @@ module ActiveRecord
   module MTI
     module Table
       def self.find(klass, table_name, parent_class=klass.superclass)
-        # puts "Looking up MTI table for #{klass} with #{table_name}"
         if concrete?(parent_class) && parent_mti_table = parent_class.mti_table
           ::ActiveRecord::MTI.child_tables.find(inhparent: parent_mti_table.oid, name: table_name) #|| parent_mti_table
         else

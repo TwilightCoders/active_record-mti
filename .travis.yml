@@ -33,11 +33,19 @@ gemfile:
   - gemfiles/activerecord-5.1.Gemfile
   - gemfiles/activerecord-5.0.Gemfile
   - gemfiles/activerecord-4.2.Gemfile
+  - gemfiles/activerecord-4.1.Gemfile
 
 matrix:
   allow_failures:
   - gemfile: gemfiles/activerecord-edge.Gemfile
+  - gemfile: gemfiles/activerecord-4.1.Gemfile
 
   exclude:
   - rvm: 2.6
     gemfile: gemfiles/activerecord-4.2.Gemfile
+
+  - rvm: 2.6
+    gemfile: gemfiles/activerecord-4.1.Gemfile
+
+  - rvm: 2.5
+    gemfile: gemfiles/activerecord-4.1.Gemfile

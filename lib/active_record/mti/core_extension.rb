@@ -39,8 +39,8 @@ module ActiveRecord
 
           # ActiveRecord::MTI.registry[mti_table&.oid] = self # maybe follow schema_cache pattern for this stuff
           # connection.mti_cache.clear_table_cache!(table_name)
-          ActiveRecord::MTI[mti_table.oid] = nil
-          @mti_table                       = nil
+          ActiveRecord::MTI[mti_table&.oid] = nil
+          @mti_table                        = nil
         end
 
         def reset_column_information
@@ -60,7 +60,7 @@ module ActiveRecord
 
           if mti_table
             # TODO: Use the list to retrieve ActiveRecord_Relation?
-            ActiveRecord::MTI.registry[mti_table.oid] = self
+            ActiveRecord::MTI[mti_table.oid] = self
             ar_r = self.const_get(:ActiveRecord_Relation)
             ar_r.prepend(::ActiveRecord::MTI::Relation)
           end
