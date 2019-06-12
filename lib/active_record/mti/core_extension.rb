@@ -2,113 +2,167 @@ require 'active_support/concern'
 require 'active_support/core_ext/object/blank'
 require 'active_support/core_ext/string/inflections'
 
-require 'active_record/mti/inheritance'
-require 'active_record/mti/query_methods'
-require 'active_record/mti/calculations'
+require 'active_record/mti/relation'
 
 module ActiveRecord
   module MTI
     module CoreExtension
-      extend ActiveSupport::Concern
 
-      included do
-        initialize_load_mti_monitor
+      def self.prepended(base)
+        base.singleton_class.prepend(ClassMethods)
       end
 
       module ClassMethods #:nodoc:
-
-        def base_model?
-          (self == base_class ||
-          superclass == ::ActiveRecord::Base ||
-          superclass.abstract_class?) == true
-        end
-
-        def compute_mti_table_name(contained = nil)
-          contained = contained_table_name if contained
-          "#{full_table_name_prefix}#{contained}#{undecorated_table_name(name)}#{full_table_name_suffix}"
-        end
-
-        def contained_table_name
-          if !base_model? && ActiveRecord::MTI.configuration.table_name_nesting
-            contained_parent_table_name + ActiveRecord::MTI.configuration.nesting_seperator
-          end
-        end
-
-        def contained_parent_table_name
-          if ActiveRecord::MTI.configuration.singular_parent
-            superclass.table_name.singularize
-          else
-            superclass.table_name
-          end
-        end
-
-        def mti_table
-          @mti_table ||= reset_mti_table
-        end
 
         def sti_or_mti?
           !abstract_class? && self != base_class
         end
 
-        # private
-
-        def load_schema
-          load_mti
-          super
+        def mti?
+          !mti_table.nil?
         end
 
-          def mti_loaded?
-            defined?(@mti_loaded) && @mti_loaded
+        def mti_table
+          reset_mti_table unless defined?(@mti_table)
+          @mti_table
+        end
+
+        def mti_table_name
+          mti_table&.name
+        end
+
+        def reset_mti_information
+          # This might be "dangerous" if other gems have modified them as well.
+          # It might be more prudent to call "inherited" which calls this as a
+          # shared injection point, to play nice with other gems. (DeletedAt?)
+          reinitialize_relation_delegate_cache
+
+          # ActiveRecord::MTI.registry[mti_table&.oid] = self # maybe follow schema_cache pattern for this stuff
+          # connection.mti_cache.clear_table_cache!(table_name)
+          # ActiveRecord::MTI.delete(mti_table.oid)
+          ActiveRecord::MTI[mti_table.oid] = nil if mti?
+          @mti_table                       = nil
+          @columns_hash&.delete("tableoid")
+        end
+
+        def reset_column_information
+          super.tap do
+            reset_mti_information
           end
+        end
 
-        protected
+        def tableoid?
+          !Thread.currently?(:skip_tableoid_cast) && mti?
+        end
 
-          def reset_mti_table
-            @mti_table = \
-              ::ActiveRecord::MTI.child_tables.find(:name, @table_name) ||
-              ::ActiveRecord::MTI.child_tables.find(:name, compute_mti_table_name(true)) ||
-              ::ActiveRecord::MTI.child_tables.find(:name, compute_mti_table_name) ||
+        def tableoid
+          mti_table&.oid
+        end
 
-              ::ActiveRecord::MTI.parent_tables.find(:name, @table_name) ||
-              ::ActiveRecord::MTI.parent_tables.find(:name, compute_mti_table_name(true)) ||
-              ::ActiveRecord::MTI.parent_tables.find(:name, compute_mti_table_name)
-          end
+        def mti_table=(value)
+          # if defined?(@mti_table)
+          #   return if value == @mti_table
+          #   reset_column_information if connected?
+          # end
 
-          def initialize_load_mti_monitor
-            @load_mti_monitor = Monitor.new
-          end
+          @mti_table = value
 
-          def load_mti
-            return if mti_loaded?
-            @load_mti_monitor.synchronize do
-              return if defined?(@mti_table) && @mti_table
+          if mti_table
+            self.attribute :tableoid, ActiveRecord::MTI.oid_class.new
 
-              unless self == ::ActiveRecord::Base || self.abstract_class? || !self.mti_table
-                load_mti!
-                ActiveRecord::MTI.registry[mti_table.oid] = self
-              end
+            # TODO: Use the list to retrieve ActiveRecord_Relation?
+            ActiveRecord::MTI.registry[mti_table.oid] = self
 
-              @mti_loaded = true
+            @relation_delegate_cache.each do |klass, delegate|
+              delegate.prepend(::ActiveRecord::MTI::Relation)
             end
           end
+        end
 
-        private
+        def table_name=(value)
+          super.tap do
+            reset_mti_table if connected?
+          end
+        end
 
-          def inherited(child_class)
+        # NOTE: 5.0+ only
+        def load_schema!
+          super.tap do |attributes|
+            add_tableoid_column if mti?
+          end
+        end
+
+        def reset_mti_table
+          mti_table_name = defined?(@table_name) ? @table_name : compute_mti_table_name
+          # mti_table_name = @table_name || compute_mti_table_name
+          self.mti_table = ActiveRecord::MTI::Table.find(self, mti_table_name)
+        end
+
+        def compute_table_name
+          mti_table_name || superclass.mti_table_name || super
+        end
+
+        def compute_mti_table_name
+          # contained = (parent_name || '').split('::').join('/') { |part| part.downcase.singularize }
+          if superclass < ::ActiveRecord::Base && !superclass.abstract_class?
+            contained = superclass.table_name
+            contained = contained.singularize if superclass.pluralize_table_names
+            contained += '/'
+          end
+          "#{full_table_name_prefix}#{contained}#{undecorated_table_name(name)}#{full_table_name_suffix}"
+        end
+
+        # Returns +true+ if this does not need STI type condition. Returns
+        # +false+ if STI type condition needs to be applied.
+        # def descends_from_active_record?
+        #   a = mti?
+        #   b = super
+        #   c = superclass.respond_to?(:descends_from_active_record?) ? superclass.descends_from_active_record? : true
+        #   # !(a || b || c) || !(!b || c) || (a && b && c)
+        #   (!a && !b && c) || b
+        # end
+
+        # Called by +instantiate+ to decide which class to use for a new
+        # record instance. For single-table inheritance, we check the record
+        # for a +type+ column and return the corresponding class.
+        def discriminate_class_for_record(record)
+          if (mti_class = ::ActiveRecord::MTI[record.delete('tableoid')])
+            mti_class.discriminate_class_for_record(record)
+          else
             super
-            child_class.initialize_load_mti_monitor
-            child_class.load_mti
           end
+        end
 
-          def load_mti!
-            self.extend(::ActiveRecord::MTI::Inheritance)
-            ar_r = self.const_get(:ActiveRecord_Relation)
-            ar_r.prepend(::ActiveRecord::MTI::QueryMethods)
-            ar_r.prepend(::ActiveRecord::MTI::Calculations)
+        # Type condition only applies if it's STI, otherwise it's
+        # done for free by querying the inherited table in MTI
 
-            ActiveRecord::MTI.add_tableoid_attribute(self)
-            reset_mti_table
+      protected
+
+        def add_tableoid_column
+          # missing_columns = (attributes.keys - @columns_hash.keys)
+          # [column_name, type, default, notnull, oid, fmod, collation, comment]
+          # field = ["tableoid", "integer", nil, false, 23, -1]
+          # column = connection.send(:new_column_from_field, table_name, field)
+          # Until support for 5.0 is dropped, we need this, because the internal API changed.
+          column = ::ActiveRecord::ConnectionAdapters::PostgreSQLColumn.new(
+            'tableoid',
+            nil,
+            23,
+            false,
+            table_name,
+            nil
+          )
+
+          columns_hash["tableoid"] ||= column
+        end
+
+        def reinitialize_relation_delegate_cache
+          @relation_delegate_cache.each do |klass, delegate|
+            mangled_name = klass.name.gsub("::".freeze, "_".freeze)
+            remove_const(mangled_name)
           end
+          initialize_relation_delegate_cache
+        end
 
       end
     end

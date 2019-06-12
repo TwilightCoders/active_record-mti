@@ -1,7 +1,4 @@
-
-lib = File.expand_path('../lib', __FILE__)
-$LOAD_PATH.unshift(lib) unless $LOAD_PATH.include?(lib)
-require 'active_record/mti/version'
+require_relative 'lib/active_record/mti/version'
 
 Gem::Specification.new do |spec|
   spec.name          = 'active_record-mti'
@@ -14,28 +11,26 @@ Gem::Specification.new do |spec|
   spec.homepage      = 'https://github.com/twilightcoders/active_record-mti'
   spec.license       = 'MIT'
 
-  if spec.respond_to?(:metadata)
-    spec.metadata['allowed_push_host'] = 'https://rubygems.org'
-  else
-    raise 'RubyGems 2.0 or newer is required to protect against public gem pushes.'
-  end
+  spec.metadata['allowed_push_host'] = 'https://rubygems.org'
 
-  spec.files         = `git ls-files -z`.split("\x0")
+  spec.files         = Dir['CHANGELOG.md', 'README.md', 'LICENSE', 'lib/**/*']
   spec.bindir        = 'bin'
   spec.executables   = spec.files.grep(%r{^bin/}) { |f| File.basename(f) }
   spec.test_files    = spec.files.grep(%r{^(test|spec|features)/})
   spec.require_paths = ['lib', 'spec']
 
-  rails_versions = ['>= 4', '< 6']
+  rails_versions = ['>= 4.2']
   spec.required_ruby_version = '>= 2.3'
 
   spec.add_runtime_dependency 'activerecord', rails_versions
-  spec.add_runtime_dependency 'pg', '~> 0'
-  spec.add_runtime_dependency 'active_registry', '~> 0.1'
+  spec.add_runtime_dependency 'pg'
+  spec.add_runtime_dependency 'registry', '~> 0.2.0'
 
-  spec.add_development_dependency 'bundler', '~> 1.3'
-  spec.add_development_dependency 'rspec', '~> 3.7'
-  spec.add_development_dependency 'combustion', '~> 0.7'
-  spec.add_development_dependency 'pry-byebug', '~> 3'
-  spec.add_development_dependency 'rake', '~> 12.0'
+  spec.add_development_dependency 'bundler'
+  spec.add_development_dependency 'rspec'
+  spec.add_development_dependency 'combustion'
+  spec.add_development_dependency 'pry-byebug'
+  spec.add_development_dependency 'rake'
+  spec.add_development_dependency 'database_cleaner'
+  spec.add_development_dependency 'simplecov'
 end

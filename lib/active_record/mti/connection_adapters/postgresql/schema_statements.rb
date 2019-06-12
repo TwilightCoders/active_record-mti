@@ -6,6 +6,7 @@ module ActiveRecord
     module ConnectionAdapters
       module PostgreSQL
         module SchemaStatements
+
           # Creates a new table with the name +table_name+. +table_name+ may either
           # be a String or a Symbol.
           #
@@ -22,12 +23,6 @@ module ActiveRecord
               options.delete(:primary_key)
             end
 
-            if (schema = options.delete(:schema))
-              # If we specify a schema then we only create it if it doesn't exist
-              # and we only force create it if only the specific schema is in the search path
-              table_name = %("#{schema}"."#{table_name}")
-            end
-
             if (inherited_table = options.delete(:inherits))
               # options[:options] = options[:options].sub("INHERITS", "() INHERITS") if td.columns.empty?
               options[:options] = [%(INHERITS ("#{inherited_table}")), options[:options]].compact.join
@@ -40,7 +35,7 @@ module ActiveRecord
               execute %(ALTER TABLE "#{table_name}" ADD PRIMARY KEY ("#{inherited_table_primary_key}"))
 
               indexes(inherited_table).each do |index|
-                attributes = index.to_h.slice(:unique, :using, :where, :orders, :name)
+                attributes = index_attributes(index)
 
                 # Why rails insists on being inconsistant with itself is beyond me.
                 attributes[:order] = attributes.delete(:orders)
@@ -56,6 +51,13 @@ module ActiveRecord
             results
           end
 
+          def index_attributes(index)
+            [:unique, :using, :where, :orders, :name].inject({}) do |hash, attribute|
+              hash.tap do |h|
+                h[attribute] = index.send(attribute)
+              end
+            end
+          end
 
           def build_index_name(index_name, inherited_table, table_name)
             return unless index_name

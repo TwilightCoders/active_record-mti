@@ -8,7 +8,7 @@ module ActiveRecord
     class Railtie < Rails::Railtie
       initializer 'active_record-mti.load' do |_app|
         ActiveSupport.on_load(:active_record) do
-          ::ActiveRecord::Base.include(::ActiveRecord::MTI::CoreExtension)
+          ::ActiveRecord::Base.prepend(::ActiveRecord::MTI::CoreExtension)
 
           ::ActiveRecord::ConnectionAdapters::PostgreSQLAdapter.prepend(ConnectionAdapters::PostgreSQL::Adapter)
           ::ActiveRecord::ConnectionAdapters::PostgreSQLAdapter.prepend(ConnectionAdapters::PostgreSQL::SchemaStatements)
