@@ -7,7 +7,7 @@ describe 'ActiveRecord::MTI dynamic classes' do
     Hacker = Class.new(Admin)
 
     expect(God.table_name).to eql(Admin.table_name)
-    expect(Hacker.table_name).to eql('admin/hackers')
+    expect(Hacker.table_name).to eql('user/admin/hackers')
   end
 
   it 'infers the table_name when defined dynamically' do

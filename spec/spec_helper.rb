@@ -28,3 +28,15 @@ RSpec.configure do |config|
     end
   end
 end
+
+RSpec::Matchers.define :match_sql do |expected_sql|
+  expected_sql.squish!.gsub!(/([\.\*\(\)\/])/, '\\\\\1')
+
+  match do |actual_sql|
+    actual_sql.match(Regexp.new(expected_sql))
+  end
+
+  failure_message do |actual_sql|
+    "expected:\n#{actual_sql.indent(2)}\nto match:\n#{expected_sql.indent(2)}"
+  end
+end

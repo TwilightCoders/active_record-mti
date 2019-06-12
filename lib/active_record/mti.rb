@@ -2,14 +2,20 @@ require 'active_record/mti/version'
 require 'active_record/mti/railtie' if defined?(Rails::Railtie)
 
 require 'registry'
-require 'active_record/mti/config'
+require 'active_record/mti/table'
 require 'core_ext/thread'
 
 module ActiveRecord
   module MTI
 
     # Rails likes to make breaking changes in it's minor versions (like 4.1 - 4.2) :P
-    mattr_accessor :oid_class
+    mattr_accessor :oid_class do
+      begin
+        ActiveModel::Type::Integer
+      rescue NameError
+        ActiveRecord::Type::Integer
+      end
+    end
 
     def self.child_tables
       @child_tables ||= create_registry(ChildTable, SQL_FOR_CHILD_TABLES).tap do |r|
@@ -29,43 +35,23 @@ module ActiveRecord
       SQL
     end
 
-    def self.registry
-      @registry ||= {}
+    def self.[](key)
+      registry[key]
     end
 
-    def self.add_tableoid_attribute(klass)
-      if klass.respond_to? :attribute
-        klass.attribute :tableoid, ActiveRecord::MTI.oid_class.new
+    def self.[]=(key, value)
+      if (self[key] && value != nil)
+        raise "Already assigned"
       else
-        new_column = ActiveRecord::ConnectionAdapters::PostgreSQLColumn.new('tableoid', nil, ActiveRecord::MTI.oid_class.new, "oid", false)
-        klass.columns.unshift new_column
-        klass.columns_hash['tableoid'] = new_column
+        registry[key]=value
       end
     end
 
-    private
+  private
 
-    mattr_accessor :oid_class_candidates
-
-    # Cannot assign default inside block because of rails 4.0
-    self.oid_class_candidates = [
-      '::ActiveRecord::ConnectionAdapters::PostgreSQLAdapter::OID::Integer', # 4.0, 4.1
-      '::ActiveRecord::ConnectionAdapters::PostgreSQL::OID::Integer', # 4.2
-      '::ActiveRecord::Type::Integer' # 5.0, 5.1
-    ]
-
-    def self.find_oid_class
-      oid_class_candidates.find(nil) { |klass|
-        begin
-          klass.constantize
-          true
-        rescue NameError
-          false
-        end
-      }.constantize
+    def self.registry
+      @registry ||= {}
     end
-
-    self.oid_class = self.find_oid_class
 
     def self.create_registry(klass, sql)
       Registry.new(ActiveRecord::Base.connection.execute(sql).to_a.map do |row|

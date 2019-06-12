@@ -1,18 +1,20 @@
-[![Version      ](https://img.shields.io/gem/v/active_record-mti.svg?maxAge=2592000)](https://rubygems.org/gems/active_record-mti)
+[![Version      ](https://img.shields.io/gem/v/active_record-mti.svg)](https://rubygems.org/gems/active_record-mti)
 [![Build Status ](https://travis-ci.org/TwilightCoders/active_record-mti.svg)](https://travis-ci.org/TwilightCoders/active_record-mti)
 [![Code Climate ](https://api.codeclimate.com/v1/badges/27b02e09b5da0a7ed2fc/maintainability)](https://codeclimate.com/github/TwilightCoders/active_record-mti/maintainability)
 [![Test Coverage](https://codeclimate.com/github/TwilightCoders/active_record-mti/badges/coverage.svg)](https://codeclimate.com/github/TwilightCoders/active_record-mti/coverage)
-[![Dependencies ](https://badges.depfu.com/badges/172a247844f319b45f01f6e941a0e387/count.svg)](https://depfu.com/github/TwilightCoders/active_record-mti)
 
 # ActiveRecord::MTI
 
 ActiveRecord support for PostgreSQL's native inherited tables (multi-table inheritance)
 
-**Supports**
-- Ruby: `2.3`, `2.4`, `2.5`
-- ActiveRecord: `4.2`, `5.0`, `5.1`
+# Requirements
 
-Confirmed production use in `4.2`
+- Ruby `2.3`+
+- ActiveRecord `4.2`+
+
+**Confirmed Rails `4.2` use in production**
+
+_Note: Be sure to check the builds to be sure your version is in-fact supported. The requirements are left unbounded on the upper constraint for posterity, but may not be gaurenteed to work._
 
 ## Installation
 
@@ -70,19 +72,6 @@ In most cases, you shouldn't have to do anything beyond installing the gem. `Act
 Conventionally—to indicate the nature of inheritance—`ActiveRecord::MTI` expects the `table_name` of a child model to follow the `singular_parent_table_name/plural_child_table_name` pattern. As always, if you need to deviate from this, you can explicitly set the `table_name` as shown below, or configure `ActiveRecord::MTI` using the configure block.
 
 Note, `ActiveRecord::MTI` will fall back on the unnested `table_name` if it's unable to find the nested form, and short of that, it will use the superclass's `table_name`.
-
-### Configuration
-`ActiveRecord::MTI` can be configured using a configure block.
-
-```ruby
-# config/initializers/active_record_mti.rb
-
-ActiveRecord::MTI.configure do |config|
-  config.table_name_nesting = true
-  config.nesting_seperator = '/'
-  config.singular_parent = true
-end
-```
 
 ### Migrations
 

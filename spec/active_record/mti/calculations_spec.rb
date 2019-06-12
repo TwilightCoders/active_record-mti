@@ -1,6 +1,6 @@
 require 'spec_helper'
 
-describe ActiveRecord::MTI::Calculations do
+describe ActiveRecord::MTI::Relation do
   context 'when an exception occurs' do
     it 'does not continue to adversely affect additional queries' do
       Admin.create(email: 'bob')
@@ -13,11 +13,11 @@ describe ActiveRecord::MTI::Calculations do
   {
     Admin => {
       description: "with table_name explicitly set",
-      table_name: 'admins'
+      table_name: 'user/admins'
     },
     Developer => {
       description: "without table_name explicitly set",
-      table_name: 'developers'
+      table_name: 'user/developers'
     }
   }.each do |model, meta|
     context meta[:description] do
@@ -59,14 +59,26 @@ describe ActiveRecord::MTI::Calculations do
           expect(User.all.count).to eq(4)
 
         end
+
+        it "count tableoid explicitly" do
+
+          model.create(email: 'foo@bar.baz')
+          model.create(email: 'foo@bar.baz')
+          model.create(email: 'foo24@bar.baz')
+
+          expect(model.count(:tableoid)).to eq(3)
+          expect(User.all.count).to eq(4)
+
+        end
       end
 
       context "when grouped" do
         context "with tableoid explicitly" do
+          # TODO: If the user explicitly selects :tableoid, do we want to group for them?
+          # Line 46 in relation.rb
           it "projects tableoid in query" do
             sql = model.select(:email, :tableoid).group(:email).to_sql
-
-            expect(sql).to match(/SELECT .*, \"#{meta[:table_name]}\".\"tableoid\" AS tableoid FROM \"#{meta[:table_name]}\"/)
+            expect(sql).to match(/SELECT .*, \"#{meta[:table_name]}\".\"tableoid\" FROM \"#{meta[:table_name]}\"/)
 
             expect(sql).to match(/GROUP BY .*, \"#{meta[:table_name]}\".\"tableoid\"/)
           end
@@ -76,7 +88,7 @@ describe ActiveRecord::MTI::Calculations do
           it "projects tableoid in query" do
             sql = model.select(:email).group(:email, :tableoid).to_sql
 
-            expect(sql).to match(/SELECT .*, \"#{meta[:table_name]}\".\"tableoid\" AS tableoid FROM \"#{meta[:table_name]}\"/)
+            expect(sql).to match(/SELECT .*, \"#{meta[:table_name]}\".\"tableoid\" FROM \"#{meta[:table_name]}\"/)
 
             expect(sql).to match(/GROUP BY .*, \"#{meta[:table_name]}\".\"tableoid\"/)
           end
