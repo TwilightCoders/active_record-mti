@@ -18,37 +18,43 @@ module ActiveRecord
           # we manually add it.  Lastly we also create indexes on the child table to match those
           # on the parent table since indexes are also not inherited.
           def create_table(table_name, options = {})
-            if options[:inherits]
+            if (inherited_table = options.delete(:inherits))
               options[:id] = false
               options.delete(:primary_key)
-            end
-
-            if (inherited_table = options.delete(:inherits))
-              # options[:options] = options[:options].sub("INHERITS", "() INHERITS") if td.columns.empty?
               options[:options] = [%(INHERITS ("#{inherited_table}")), options[:options]].compact.join
             end
 
-            results = super(table_name, options)
+            super(table_name, options) do |td|
+              yield(td) if block_given?
 
-            if inherited_table
-              inherited_table_primary_key = primary_key(inherited_table)
-              execute %(ALTER TABLE "#{table_name}" ADD PRIMARY KEY ("#{inherited_table_primary_key}"))
-
-              indexes(inherited_table).each do |index|
-                attributes = index_attributes(index)
-
-                # Why rails insists on being inconsistant with itself is beyond me.
-                attributes[:order] = attributes.delete(:orders)
-
-                if (index_name = build_index_name(attributes.delete(:name), inherited_table, table_name))
-                  attributes[:name] = index_name
-                end
-
-                add_index table_name, index.columns, attributes
-              end
+              fix_inherits_statement(td) if inherited_table
+            end.tap do |result|
+              inherit_indexes(table_name, inherited_table) if inherited_table
             end
+          end
 
-            results
+          def fix_inherits_statement(td)
+            if td.columns.empty? && ActiveRecord.version >= Gem::Version.new('5.0')
+              td.options.gsub!('INHERITS', '() INHERITS')
+            end
+          end
+
+          def inherit_indexes(table_name, inherited_table)
+            inherited_table_primary_key = primary_key(inherited_table)
+            execute %(ALTER TABLE "#{table_name}" ADD PRIMARY KEY ("#{inherited_table_primary_key}"))
+
+            indexes(inherited_table).each do |index|
+              attributes = index_attributes(index)
+
+              # Why rails insists on being inconsistant with itself is beyond me.
+              attributes[:order] = attributes.delete(:orders)
+
+              if (index_name = build_index_name(attributes.delete(:name), inherited_table, table_name))
+                attributes[:name] = index_name
+              end
+
+              add_index table_name, index.columns, attributes
+            end
           end
 
           def index_attributes(index)

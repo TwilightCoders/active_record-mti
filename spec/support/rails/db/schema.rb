@@ -19,7 +19,6 @@ ActiveRecord::Schema.define do
   end
 
   create_table "user/managers", force: true, inherits: :users do |t|
-    t.integer :level
   end
 
   create_table 'user/admin/hackers', force: true, inherits: 'user/admins' do |t|
