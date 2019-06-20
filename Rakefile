@@ -27,6 +27,7 @@ task :environment do
   # ActiveRecord::Migrator.migrations_paths = migrations_paths
 end
 
+require "bundler/gem_tasks"
 require "rspec/core/rake_task"
 
 Combustion::Application.load_tasks
@@ -38,4 +39,4 @@ RSpec::Core::RakeTask.new(:spec) do |t|
   t.verbose = false
 end
 
-task default: [:spec]
+task default: :spec
