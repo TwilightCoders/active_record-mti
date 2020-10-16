@@ -24,7 +24,7 @@ module ActiveRecord
               options[:options] = [%(INHERITS ("#{inherited_table}")), options[:options]].compact.join
             end
 
-            super(table_name, options) do |td|
+            super(table_name, **options) do |td|
               yield(td) if block_given?
 
               fix_inherits_statement(td) if inherited_table

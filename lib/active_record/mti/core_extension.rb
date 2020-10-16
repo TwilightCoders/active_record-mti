@@ -104,12 +104,31 @@ module ActiveRecord
 
         def compute_mti_table_name
           # contained = (parent_name || '').split('::').join('/') { |part| part.downcase.singularize }
-          if superclass < ::ActiveRecord::Base && !superclass.abstract_class?
-            contained = superclass.table_name
-            contained = contained.singularize if superclass.pluralize_table_names
+          @effective_class = superclass
+          @effective_class = @effective_class.superclass if name =~ /^#{connection.pool.spec.name}::/
+
+          if @effective_class < ::ActiveRecord::Base && !@effective_class.abstract_class?
+            contained = @effective_class.table_name
+            contained = contained.singularize if @effective_class.pluralize_table_names
             contained += '/'
           end
           "#{full_table_name_prefix}#{contained}#{undecorated_table_name(name)}#{full_table_name_suffix}"
+        end
+
+        def full_table_name_prefix #:nodoc:
+          if @effective_class.respond_to?(:module_parents)
+            (@effective_class.module_parents.detect { |p| p.respond_to?(:table_name_prefix) } || self).table_name_prefix
+          else
+            (@effective_class.parents.detect { |p| p.respond_to?(:table_name_prefix) } || self).table_name_prefix
+          end
+        end
+
+        def full_table_name_suffix #:nodoc:
+          if @effective_class.respond_to?(:module_parents)
+            (@effective_class.module_parents.detect { |p| p.respond_to?(:table_name_prefix) } || self).table_name_suffix
+          else
+            (@effective_class.parents.detect { |p| p.respond_to?(:table_name_prefix) } || self).table_name_suffix
+          end
         end
 
         # Returns +true+ if this does not need STI type condition. Returns
