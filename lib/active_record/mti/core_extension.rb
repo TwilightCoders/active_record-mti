@@ -168,8 +168,7 @@ module ActiveRecord
             nil,
             23,
             false,
-            table_name,
-            nil
+            table_name
           )
 
           columns_hash["tableoid"] ||= column
