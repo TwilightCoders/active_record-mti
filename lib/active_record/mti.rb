@@ -79,12 +79,17 @@ module ActiveRecord
 
     def self.load_child_tables
       rows = ActiveRecord::Base.connection.execute(SQL_FOR_CHILD_TABLES).to_a
-      rows.map { |row| ChildTable.new(*row.values).freeze }
+      rows.map { |row|
+        ChildTable.new(
+          row['inhrelid'], row['inhparent'], row['inhseqno'],
+          row['oid'], row['name'], row['parent_table_name']
+        ).freeze
+      }
     end
 
     def self.load_parent_tables
       rows = ActiveRecord::Base.connection.execute(SQL_FOR_PARENT_TABLES).to_a
-      rows.map { |row| ParentTable.new(*row.values).freeze }
+      rows.map { |row| ParentTable.new(row['oid'], row['name']).freeze }
     end
 
     private_constant :ChildTable, :ParentTable, :SQL_FOR_CHILD_TABLES, :SQL_FOR_PARENT_TABLES

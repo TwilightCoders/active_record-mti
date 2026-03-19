@@ -185,7 +185,7 @@ module ActiveRecord
 
         def reinitialize_relation_delegate_cache
           @relation_delegate_cache.each do |klass, _delegate|
-            mangled_name = klass.name.gsub("::".freeze, "_".freeze)
+            mangled_name = klass.name.gsub("::", "_")
             remove_const(mangled_name) if const_defined?(mangled_name, false)
           end
           initialize_relation_delegate_cache
