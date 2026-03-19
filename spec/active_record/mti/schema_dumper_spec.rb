@@ -2,7 +2,21 @@ require 'spec_helper'
 
 describe ActiveRecord::MTI::SchemaDumper do
   before(:each) do
-    ActiveRecord::SchemaMigration.create_table
+    # SchemaMigration.create_table became an instance method in Rails 7.1
+    if ActiveRecord::SchemaMigration.respond_to?(:create_table)
+      ActiveRecord::SchemaMigration.create_table
+    elsif ActiveRecord::SchemaMigration.respond_to?(:new)
+      begin
+        sm = if ActiveRecord::SchemaMigration.method(:new).arity != 0
+               ActiveRecord::SchemaMigration.new(ActiveRecord::Base.connection_pool)
+             else
+               ActiveRecord::SchemaMigration.new
+             end
+        sm.create_table if sm.respond_to?(:create_table)
+      rescue
+        # Schema migration table likely already exists
+      end
+    end
   end
 
   let(:hacker_sql) do
