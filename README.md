@@ -1,134 +1,155 @@
-[![Version      ](https://img.shields.io/gem/v/active_record-mti.svg)](https://rubygems.org/gems/active_record-mti)
-[![Build Status ](https://travis-ci.org/TwilightCoders/active_record-mti.svg)](https://travis-ci.org/TwilightCoders/active_record-mti)
-[![Code Climate ](https://api.codeclimate.com/v1/badges/27b02e09b5da0a7ed2fc/maintainability)](https://codeclimate.com/github/TwilightCoders/active_record-mti/maintainability)
-[![Test Coverage](https://codeclimate.com/github/TwilightCoders/active_record-mti/badges/coverage.svg)](https://codeclimate.com/github/TwilightCoders/active_record-mti/coverage)
-
 # ActiveRecord::MTI
 
-ActiveRecord support for PostgreSQL's native inherited tables (multi-table inheritance)
+ActiveRecord support for PostgreSQL's native inherited tables (multi-table inheritance).
 
-# Requirements
+## Requirements
 
-- Ruby `2.3`+
-- ActiveRecord `4.2`+
-
-**Confirmed Rails `4.2` use in production**
-
-_Note: Be sure to check the builds to be sure your version is in-fact supported. The requirements are left unbounded on the upper constraint for posterity, but may not be gaurenteed to work._
+- Ruby **2.5+**
+- ActiveRecord **5.0+**
+- PostgreSQL **9.4+**
 
 ## Installation
 
-Add this line to your application's Gemfile:
+Add to your Gemfile:
 
-    gem 'active_record-mti'
+```ruby
+gem 'active_record-mti'
+```
 
-And then execute:
+## How It Works
 
-    $ bundle
+PostgreSQL supports table inheritance via `CREATE TABLE child () INHERITS (parent)`.
+Child tables inherit all columns from the parent, can add their own, and rows in
+child tables appear in queries against the parent. Each row carries a `tableoid`
+system column identifying which physical table it belongs to.
 
-Or install it yourself as:
-
-    $ gem install active_record-mti
+`ActiveRecord::MTI` uses `tableoid` to automatically instantiate the correct
+Ruby class when querying through a parent table — no discriminator column needed.
 
 ## Usage
 
+### Models
+
 ```ruby
-class Account < ::ActiveRecord::Base
-  # table_name is 'accounts'
-  # ...
+class Account < ActiveRecord::Base
+  # table: accounts
 end
 
 class User < Account
-  # table_name is 'account/users'
-  # ...
-end
-
-class Developer < Account
-  # table_name is 'account/developers'
-  # ...
+  # table: account/users (auto-inferred)
 end
 
 class Admin < User
-  self.table_name = 'admins'
-  # ...
-end
-
-class Hacker < Developer
-  # table_name is 'account/developer/hackers'
-  # ...
+  self.table_name = 'account/admins'
 end
 ```
 
-In most cases, you shouldn't have to do anything beyond installing the gem. `ActiveRecord::MTI` will do it's best to determine the nature of inheritance in your models. If your models map to their own tables, `ActiveRecord::MTI` will step in and make sure inheritance is treated appropriately. Otherwise it will gracefully acquiesce to `ActiveRecord`'s built-in `STI`. _(see Table Names section below)_.
+In most cases, you don't need to do anything beyond installing the gem. MTI will
+detect when a model maps to a PostgreSQL inherited table and handle instantiation
+automatically.
+
+### Table Name Convention
+
+Child table names follow `singular_parent/plural_child`:
+
+| Model       | Inferred Table Name       |
+|-------------|---------------------------|
+| `Account`   | `accounts`                |
+| `User`      | `account/users`           |
+| `Developer` | `account/developers`      |
+| `Hacker`    | `account/developer/hackers` |
+
+Override with `self.table_name = '...'` when needed.
 
 ### Queries
 
-`ActiveRecord` queries work as usual with the following differences:
+```ruby
+# Queries all child tables via the parent — returns mixed types
+Account.all
+# => [#<User ...>, #<Admin ...>, #<Developer ...>]
 
-- The default query of "\*" is changed to include the OID of each row for subclass discrimination. The default select will be `SELECT "accounts"."tableoid" AS tableoid, "accounts".*` (for example)
+# Queries only the child table
+Admin.where(active: true)
+# => [#<Admin ...>]
 
-### Table Names
+# Associations work transparently
+post.commenters  # may return User, Admin, Developer instances
+```
 
-Conventionally—to indicate the nature of inheritance—`ActiveRecord::MTI` expects the `table_name` of a child model to follow the `singular_parent_table_name/plural_child_table_name` pattern. As always, if you need to deviate from this, you can explicitly set the `table_name` as shown below, or configure `ActiveRecord::MTI` using the configure block.
-
-Note, `ActiveRecord::MTI` will fall back on the unnested `table_name` if it's unable to find the nested form, and short of that, it will use the superclass's `table_name`.
+The default `SELECT` includes `tableoid` for subclass discrimination:
+```sql
+SELECT "accounts".*, "accounts"."tableoid" FROM "accounts"
+```
 
 ### Migrations
 
-In your migrations define a table to inherit from another table:
-
 ```ruby
-class CreateAccounts < ActiveRecord::Migration
+class CreateAccounts < ActiveRecord::Migration[7.1]
   def change
     create_table :accounts do |t|
-      t.jsonb      :settings
-      t.timestamps null: false
+      t.jsonb :settings
+      t.timestamps
     end
 
-    create_table :users, inherits: :accounts do |t|
-      t.string     :firstname
-      t.string     :lastname
+    create_table 'account/users', inherits: :accounts do |t|
+      t.string :email
     end
 
-    create_table :developers, inherits: :users do |t|
-      t.string     :url
-      t.string     :api_key
+    create_table 'account/admins', inherits: 'account/users' do |t|
+      t.integer :access_level
     end
   end
 end
-
 ```
 
-### Schema
+Child tables automatically inherit the parent's primary key and indexes.
 
-A schema will be created that reflects the inheritance chain so that `rake:db:schema:load` will work
+### Schema Dump
+
+`rake db:schema:dump` produces a schema that preserves the inheritance chain:
 
 ```ruby
-ActiveRecord::Schema.define(version: 20160910024954) do
+create_table "accounts", force: :cascade do |t|
+  t.jsonb "settings"
+  t.datetime "created_at", null: false
+  t.datetime "updated_at", null: false
+end
 
-  create_table "accounts", force: :cascade do |t|
-    t.jsonb    "settings"
-    t.datetime "created_at", null: false
-    t.datetime "updated_at", null: false
-  end
-
-  create_table "users", inherits: "accounts" do |t|
-    t.string "firstname"
-    t.string "lastname"
-  end
-
-  create_table "developers", inherits: "users" do |t|
-    t.string "url"
-    t.string "api_key"
-  end
-
+create_table "account/users", inherits: "accounts" do |t|
+  t.string "email"
 end
 ```
+
+### Mixing MTI and STI
+
+A model can use both. The child table can have a `type` column for STI within
+the MTI branch:
+
+```ruby
+class Vehicle < ActiveRecord::Base
+  # table: vehicles (has a `type` column)
+end
+
+class Truck < Vehicle
+  # table: vehicle/trucks (MTI — own table, inherits from vehicles)
+end
+
+class Pickup < Truck
+  # STI — shares vehicle/trucks table, discriminated by `type`
+end
+```
+
+### Known Limitations
+
+- **Child-specific columns** are not available when querying through the parent
+  table. `Message.all` returns the correct subclass, but only parent columns are
+  populated. Call `.reload` or query the child class directly to access
+  child-specific attributes.
 
 ## Contributing
 
-1. Fork it ( https://github.com/TwilightCoders/active_record-mti/fork )
-2. Create your feature branch (`git checkout -b my-new-feature`)
-3. Commit your changes (`git commit -am 'Add some feature'`)
-4. Push to the branch (`git push origin my-new-feature`)
-5. Create a new Pull Request
+1. Fork it
+2. Create your feature branch (`git checkout -b my-feature`)
+3. Commit your changes
+4. Push to the branch
+5. Create a Pull Request
