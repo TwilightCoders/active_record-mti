@@ -1,5 +1,4 @@
 test:
   adapter: postgresql
-  host: localhost
   encoding: unicode
   database: active_record-mti-test
