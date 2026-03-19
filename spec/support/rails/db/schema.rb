@@ -55,4 +55,47 @@ ActiveRecord::Schema.define do
   create_table 'vehicle/trucks', force: true, inherits: :vehicles do |t|
     t.integer :bed_size
   end
+
+  ########################################
+  ### Hangar Message Hierarchy (MTI)   ###
+  ########################################
+
+  create_table :sessions, force: true do |t|
+    t.string :name
+    t.timestamps null: false
+  end
+
+  create_table :messages, force: true do |t|
+    t.integer :session_id
+    t.integer :sequence
+    t.string :type
+    t.text :content
+    t.timestamps null: false
+  end
+
+  add_index :messages, :session_id
+
+  create_table 'message/user_messages', force: true, inherits: :messages do |t|
+    t.string :role
+  end
+
+  create_table 'message/assistant_responses', force: true, inherits: :messages do |t|
+    t.string :model
+    t.integer :token_count
+  end
+
+  create_table 'message/tool_invocations', force: true, inherits: :messages do |t|
+    t.string :tool_name
+    t.jsonb :arguments
+  end
+
+  create_table 'message/tool_results', force: true, inherits: :messages do |t|
+    t.string :tool_name
+    t.boolean :success
+    t.text :output
+  end
+
+  create_table 'message/system_events', force: true, inherits: :messages do |t|
+    t.string :event_type
+  end
 end

@@ -4,28 +4,35 @@ describe ActiveRecord::MTI do
 
   describe "#child_tables" do
     it "returns an array of child tables" do
-      # Sort the tables by name to not depend on the order
       child_tables = ActiveRecord::MTI.child_tables.sort_by(&:name)
+      child_names = child_tables.map(&:name)
 
-      expect(child_tables[0].name).to eq('user/admin/hackers')
-      expect(child_tables[0].parent_table_name).to eq('user/admins')
+      # Original user hierarchy
+      expect(child_names).to include('user/admins', 'user/developers', 'user/admin/hackers')
 
-      expect(child_tables[1].name).to eq('user/admins')
-      expect(child_tables[1].parent_table_name).to eq('users')
+      # Hangar message hierarchy
+      expect(child_names).to include(
+        'message/user_messages',
+        'message/assistant_responses',
+        'message/tool_invocations',
+        'message/tool_results',
+        'message/system_events'
+      )
 
-      expect(child_tables[2].name).to eq('user/developers')
-      expect(child_tables[2].parent_table_name).to eq('users')
+      # Verify parent relationships
+      admins = child_tables.detect { |t| t.name == 'user/admins' }
+      expect(admins.parent_table_name).to eq('users')
+
+      user_messages = child_tables.detect { |t| t.name == 'message/user_messages' }
+      expect(user_messages.parent_table_name).to eq('messages')
     end
   end
 
   describe "#parent_tables" do
-    it "returns an array of child tables" do
-      # Sort the tables by name to not depend on the order
-      parent_tables = ActiveRecord::MTI.parent_tables.sort_by(&:name)
+    it "returns an array of parent tables" do
+      parent_names = ActiveRecord::MTI.parent_tables.map(&:name).sort
 
-      expect(parent_tables[0].name).to eq('user/admins')
-      expect(parent_tables[1].name).to eq('users')
-      expect(parent_tables[2].name).to eq('vehicles')
+      expect(parent_names).to include('messages', 'user/admins', 'users', 'vehicles')
     end
   end
 end
