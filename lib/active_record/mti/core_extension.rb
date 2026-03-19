@@ -32,14 +32,8 @@ module ActiveRecord
         end
 
         def reset_mti_information
-          # This might be "dangerous" if other gems have modified them as well.
-          # It might be more prudent to call "inherited" which calls this as a
-          # shared injection point, to play nice with other gems. (DeletedAt?)
           reinitialize_relation_delegate_cache
 
-          # ActiveRecord::MTI.registry[mti_table&.oid] = self # maybe follow schema_cache pattern for this stuff
-          # connection.mti_cache.clear_table_cache!(table_name)
-          # ActiveRecord::MTI.delete(mti_table.oid)
           ActiveRecord::MTI[mti_table.oid] = nil if mti?
           @mti_table                       = nil
           @columns_hash&.delete("tableoid")
@@ -52,7 +46,7 @@ module ActiveRecord
         end
 
         def tableoid?
-          !Thread.currently?(:skip_tableoid_cast) && mti?
+          !ThreadContext.active?(:skip_tableoid_cast) && mti?
         end
 
         def tableoid
@@ -60,20 +54,14 @@ module ActiveRecord
         end
 
         def mti_table=(value)
-          # if defined?(@mti_table)
-          #   return if value == @mti_table
-          #   reset_column_information if connected?
-          # end
-
           @mti_table = value
 
           if mti_table
             self.attribute :tableoid, ActiveRecord::MTI.oid_class.new
 
-            # TODO: Use the list to retrieve ActiveRecord_Relation?
             ActiveRecord::MTI.registry[mti_table.oid] = self
 
-            @relation_delegate_cache.each do |klass, delegate|
+            @relation_delegate_cache.each do |_klass, delegate|
               delegate.prepend(::ActiveRecord::MTI::Relation)
             end
           end
@@ -85,16 +73,14 @@ module ActiveRecord
           end
         end
 
-        # NOTE: 5.0+ only
         def load_schema!
-          super.tap do |attributes|
+          super.tap do
             add_tableoid_column if mti?
           end
         end
 
         def reset_mti_table
           mti_table_name = defined?(@table_name) ? @table_name : compute_mti_table_name
-          # mti_table_name = @table_name || compute_mti_table_name
           self.mti_table = ActiveRecord::MTI::Table.find(self, mti_table_name)
         end
 
@@ -103,7 +89,6 @@ module ActiveRecord
         end
 
         def compute_mti_table_name
-          # contained = (parent_name || '').split('::').join('/') { |part| part.downcase.singularize }
           if superclass < ::ActiveRecord::Base && !superclass.abstract_class?
             contained = superclass.table_name
             contained = contained.singularize if superclass.pluralize_table_names
@@ -112,19 +97,8 @@ module ActiveRecord
           "#{full_table_name_prefix}#{contained}#{undecorated_table_name(name)}#{full_table_name_suffix}"
         end
 
-        # Returns +true+ if this does not need STI type condition. Returns
-        # +false+ if STI type condition needs to be applied.
-        # def descends_from_active_record?
-        #   a = mti?
-        #   b = super
-        #   c = superclass.respond_to?(:descends_from_active_record?) ? superclass.descends_from_active_record? : true
-        #   # !(a || b || c) || !(!b || c) || (a && b && c)
-        #   (!a && !b && c) || b
-        # end
-
         # Called by +instantiate+ to decide which class to use for a new
-        # record instance. For single-table inheritance, we check the record
-        # for a +type+ column and return the corresponding class.
+        # record instance. MTI class discrimination happens before STI.
         def discriminate_class_for_record(record)
           if (mti_class = ::ActiveRecord::MTI[record.delete('tableoid')])
             mti_class.discriminate_class_for_record(record)
@@ -133,33 +107,86 @@ module ActiveRecord
           end
         end
 
-        # Type condition only applies if it's STI, otherwise it's
-        # done for free by querying the inherited table in MTI
+        # Rails 7.1+ optimizes _load_from_sql to skip discriminate_class_for_record
+        # when the inheritance_column isn't in the result set. For MTI, we need
+        # discrimination to happen when tableoid is present, so we force the
+        # instantiate path.
+        if ActiveRecord.version >= Gem::Version.new('7.1')
+          def _load_from_sql(result_set, &block)
+            if mti? && result_set.includes_column?('tableoid')
+              column_types = result_set.column_types
+              unless column_types.empty?
+                column_types = column_types.reject { |k, _| attribute_types.key?(k) }
+              end
+
+              message_bus = ActiveSupport::Notifications.instrumenter
+              payload = { record_count: result_set.length, class_name: name }
+
+              message_bus.instrument("instantiation.active_record", payload) do
+                result_set.map { |record| instantiate(record, column_types, &block) }
+              end
+            else
+              super
+            end
+          end
+        end
 
       protected
 
         def add_tableoid_column
-          # missing_columns = (attributes.keys - @columns_hash.keys)
-          # [column_name, type, default, notnull, oid, fmod, collation, comment]
-          # field = ["tableoid", "integer", nil, false, 23, -1]
-          # column = connection.send(:new_column_from_field, table_name, field)
-          # Until support for 5.0 is dropped, we need this, because the internal API changed.
-          column = ::ActiveRecord::ConnectionAdapters::PostgreSQLColumn.new(
-            'tableoid',
-            nil,
-            23,
-            false,
-            table_name,
-            nil
-          )
+          return if columns_hash.key?("tableoid")
 
-          columns_hash["tableoid"] ||= column
+          col = build_tableoid_column
+          return unless col
+
+          # Rails 7.0+ freezes columns_hash after load_schema!.
+          # We need to replace it with a new hash that includes tableoid.
+          if columns_hash.frozen?
+            @columns_hash = columns_hash.merge("tableoid" => col).freeze
+          else
+            columns_hash["tableoid"] = col
+          end
+        end
+
+        def build_tableoid_column
+          field = synthesize_tableoid_field
+          factory = connection.method(:new_column_from_field)
+
+          case factory.arity
+          when 3
+            # Rails 7.1+: (table_name, field, definitions)
+            definitions = connection.send(:column_definitions, table_name)
+            connection.send(:new_column_from_field, table_name, field, definitions)
+          else
+            # Rails 5.x - 7.0: (table_name, field)
+            connection.send(:new_column_from_field, table_name, field)
+          end
+        rescue => e
+          # If column construction fails, the attribute API registration
+          # from mti_table= is still active — queries will still work,
+          # we just won't have a columns_hash entry.
+          nil
+        end
+
+        def synthesize_tableoid_field
+          # column_definitions returns arrays whose length grew over Rails versions:
+          # Rails 5.x: [name, type, default, notnull, oid, fmod, collation, comment]
+          # Rails 7.0: + attgenerated
+          # Rails 8.0: + attidentity
+          base = ['tableoid', 'oid', nil, false, 26, -1]
+          if ActiveRecord.version >= Gem::Version.new('8.0')
+            base + [nil, nil, nil, nil]  # collation, comment, identity, generated
+          elsif ActiveRecord.version >= Gem::Version.new('7.0')
+            base + [nil, nil, nil]       # collation, comment, generated
+          else
+            base + [nil, nil]            # collation, comment
+          end
         end
 
         def reinitialize_relation_delegate_cache
-          @relation_delegate_cache.each do |klass, delegate|
+          @relation_delegate_cache.each do |klass, _delegate|
             mangled_name = klass.name.gsub("::".freeze, "_".freeze)
-            remove_const(mangled_name)
+            remove_const(mangled_name) if const_defined?(mangled_name, false)
           end
           initialize_relation_delegate_cache
         end

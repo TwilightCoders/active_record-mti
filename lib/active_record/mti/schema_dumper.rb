@@ -1,15 +1,9 @@
-require 'core_ext/hash'
-
 # Modified SchemaDumper that knows how to dump
 # inherited tables. Key is that we have to dump parent
 # tables before we dump child tables (of course).
 # In addition we have to make sure we don't dump columns
 # that are inherited.
 module ActiveRecord
-  # = Active Record Schema Dumper
-  #
-  # This class is used to dump the database schema for some connection to some
-  # output format (i.e., ActiveRecord::Schema).
   module MTI
     module SchemaDumper #:nodoc:
       def dumped_tables
@@ -30,13 +24,14 @@ module ActiveRecord
           string = inject_inherits_for_create_table(string, table, parent_table)
           string = remove_parent_table_columns(string, @connection.columns(parent_table))
 
-          pindexes = Hash[@connection.indexes(parent_table).map { |index| [index.columns, index] }]
-          cindexes = Hash[@connection.indexes(table).map { |index| [index.columns, index] }]
+          parent_idx = @connection.indexes(parent_table).map { |i| [i.columns, i] }.to_h
+          child_idx  = @connection.indexes(table).map { |i| [i.columns, i] }.to_h
+          shared_keys = parent_idx.keys & child_idx.keys
+          shared_indexes = shared_keys.map { |k| child_idx[k] }
 
-          string = remove_parent_table_indexes(string, (pindexes & cindexes).values)
+          string = remove_parent_table_indexes(string, shared_indexes)
         end
 
-        # We've done this table
         dumped_tables << table
 
         stream.write string
@@ -48,6 +43,7 @@ module ActiveRecord
         tbl_end = ' do |t|'
         tbl_inherit = ", inherits: '#{parent_table}'"
         string.gsub!(/#{Regexp.escape(tbl_start)}.*#{Regexp.escape(tbl_end)}/, tbl_start + tbl_inherit + tbl_end)
+        string
       end
 
       def remove_parent_table_columns(string, columns)

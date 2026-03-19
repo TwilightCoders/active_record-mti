@@ -12,7 +12,7 @@ module ActiveRecord
 
       def build_mti(arel)
         if klass.tableoid?
-          arel.project(tableoid_project) if !projecting_tableoid?(arel)
+          arel.project(tableoid_project) unless projecting_tableoid?(arel)
           arel.group(tableoid_group) if group_values.any?
         end
       end
@@ -39,13 +39,13 @@ module ActiveRecord
       private
 
       def perform_calculation(*)
-        Thread.currently(:skip_tableoid_cast, true) do
+        ThreadContext.with(:skip_tableoid_cast, true) do
           super
         end
       end
 
       def tableoid_project
-        arel_table[:tableoid]#.as('tableoid')
+        arel_table[:tableoid]
       end
 
       def tableoid_group

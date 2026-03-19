@@ -3,17 +3,11 @@ module ActiveRecord
     module ConnectionAdapters
       module PostgreSQL
         module Adapter
-          def column_definitions(table_name) # :nodoc:
-            exec_query(<<-SQL, 'SCHEMA').rows
-              SELECT a.attname, format_type(a.atttypid, a.atttypmod),
-                  pg_get_expr(d.adbin, d.adrelid), a.attnotnull, a.atttypid, a.atttypmod
-              FROM pg_attribute a LEFT JOIN pg_attrdef d
-                ON a.attrelid = d.adrelid AND a.attnum = d.adnum
-              WHERE a.attrelid = '#{quote_table_name(table_name)}'::regclass
-                AND a.attnum > 0 AND NOT a.attisdropped
-                AND a.attname != 'tableoid'
-              ORDER BY a.attnum
-            SQL
+          # Filter out the tableoid system column from column definitions.
+          # Rather than replacing the entire SQL query (which changes across
+          # Rails versions), we call super and filter the result.
+          def column_definitions(table_name)
+            super.reject { |row| row[0] == 'tableoid' }
           end
         end
       end
