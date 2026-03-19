@@ -1,9 +1,29 @@
 # ActiveRecord::MTI
 
+## 0.5.0 _(Unreleased)_
+- **Rails 7.1 compatibility** — fixed `_load_from_sql` override for Rails 7.1+
+  which skips `discriminate_class_for_record` when the inheritance column is
+  absent from the result set
+- Fixed frozen `columns_hash` on Rails 7.0+ by replacing the hash instead of
+  mutating it
+- Fixed `build_tableoid_column` to handle the `new_column_from_field` arity
+  change in Rails 7.1 (3 args instead of 2)
+- Fixed `column_definitions` override to filter results rather than replacing
+  the full SQL query — forward-compatible across Rails versions
+- Fixed `pg_inherits` query to select specific columns (PG10+ added
+  `inhdetachpending` which broke the struct)
+- Fixed `create_table` to use `**kwargs` for Rails 7+ compatibility
+- Fixed `postgresql_version` parsing for suffixed strings like "17.9 (Homebrew)"
+- Replaced Thread monkey-patch with `ThreadContext` module
+- Replaced `Hash#&` monkey-patch with inline set intersection
+- Dropped `registry` gem dependency — uses plain Hash + Array#detect
+- Added Gemfiles for Rails 6.0, 6.1, 7.0, 7.1, 7.2, 8.0
+- Bumped minimum Ruby to 2.5, minimum Rails to 5.0
+
 ## 0.4.0 _(Unreleased)_
-- Major overhaul to improve injection hiegine and performance
+- Major overhaul to improve injection hygiene and performance
   - Refactored to improve inheritance detection at boot
-  - Simplified a lot of the core inheritence logic
+  - Simplified a lot of the core inheritance logic
   - Improved Registry of parent/child tables
 - Removed `uses_mti`
 
