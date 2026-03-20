@@ -102,6 +102,7 @@ module ActiveRecord
         # Both share force_mti_instantiation which routes through `instantiate`
         # (calling discriminate_class_for_record) instead of `instantiate_instance_of`.
         if ActiveRecord.version >= Gem::Version.new('7.0')
+          # 7.0+ extracted _load_from_sql which branches on inheritance_column.
           def _load_from_sql(result_set, &block)
             if mti? && result_set.includes_column?('tableoid')
               force_mti_instantiation(result_set, &block)
@@ -109,14 +110,17 @@ module ActiveRecord
               super
             end
           end
-        else
+        elsif ActiveRecord.version >= Gem::Version.new('6.0')
+          # 6.0-6.x: find_by_sql branches on inheritance_column, skipping
+          # discriminate_class_for_record when it's absent. We intercept to
+          # force discrimination when tableoid is present.
+          # (5.x always calls instantiate → discriminate, so no override needed.)
           def find_by_sql(sql, binds = [], preparable: nil, &block)
             result_set = connection.select_all(sanitize_sql(sql), "#{name} Load", binds, preparable: preparable)
 
             if mti? && result_set.columns.include?('tableoid')
               force_mti_instantiation(result_set, &block)
             else
-              # Fall through to AR's standard instantiation (STI or homogeneous)
               column_types = result_set.column_types
               column_types = column_types.reject { |k, _| attribute_types.key?(k) } unless column_types.empty?
 
@@ -133,6 +137,8 @@ module ActiveRecord
             end
           end
         end
+        # Rails 5.x: no override needed — find_by_sql always calls instantiate
+        # which calls discriminate_class_for_record.
 
       private
 
