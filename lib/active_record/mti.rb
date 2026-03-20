@@ -7,7 +7,6 @@ require 'active_record/mti/table'
 module ActiveRecord
   module MTI
 
-    # Rails changed the location of Type::Integer across versions
     mattr_accessor :oid_class do
       begin
         ActiveModel::Type::Integer
@@ -16,48 +15,67 @@ module ActiveRecord
       end
     end
 
-    # --- Table discovery from pg_inherits ---
+    @mutex = Mutex.new
 
     def self.child_tables
-      @child_tables ||= load_child_tables
+      @child_tables || @mutex.synchronize { @child_tables ||= load_child_tables }
     end
 
     def self.parent_tables
-      @parent_tables ||= load_parent_tables
-    end
-
-    def self.reset!
-      @child_tables = nil
-      @parent_tables = nil
-      @registry = nil
+      @parent_tables || @mutex.synchronize { @parent_tables ||= load_parent_tables }
     end
 
     def self.postgresql_version
-      @postgresql_version ||= begin
-        raw = ActiveRecord::Base.connection.execute("SHOW server_version").to_a.first['server_version']
-        # Strip non-numeric suffixes like "(Homebrew)" or "(Ubuntu)"
-        Gem::Version.new(raw[/[\d.]+/])
+      @postgresql_version || @mutex.synchronize do
+        @postgresql_version ||= begin
+          raw = ActiveRecord::Base.connection.execute("SHOW server_version").to_a.first['server_version']
+          Gem::Version.new(raw[/[\d.]+/])
+        end
       end
     end
 
-    # --- OID -> Class registry ---
+    def self.reset!
+      @mutex.synchronize do
+        @child_tables = nil
+        @parent_tables = nil
+        @postgresql_version = nil
+        @registry = nil
+      end
+    end
 
     def self.[](key)
       registry[key]
     end
 
     def self.[]=(key, value)
-      if self[key] && !value.nil?
-        raise "Already assigned OID #{key} to #{self[key]}, cannot reassign to #{value}"
-      else
-        registry[key] = value
+      existing = registry[key]
+      if existing && !value.nil? && existing != value
+        raise "OID #{key} already mapped to #{existing}, cannot reassign to #{value}"
       end
+      registry[key] = value
     end
 
-    private
+    class << self
+      private
 
-    def self.registry
-      @registry ||= {}
+      def registry
+        @registry ||= {}
+      end
+
+      def load_child_tables
+        ActiveRecord::Base.connection.execute(SQL_FOR_CHILD_TABLES).to_a.map { |row|
+          ChildTable.new(
+            row['inhrelid'], row['inhparent'], row['inhseqno'],
+            row['oid'], row['name'], row['parent_table_name']
+          ).freeze
+        }
+      end
+
+      def load_parent_tables
+        ActiveRecord::Base.connection.execute(SQL_FOR_PARENT_TABLES).to_a.map { |row|
+          ParentTable.new(row['oid'], row['name']).freeze
+        }
+      end
     end
 
     ChildTable  = Struct.new(:inhrelid, :inhparent, :inhseqno, :oid, :name, :parent_table_name)
@@ -76,21 +94,6 @@ module ActiveRecord
         FROM "pg_class", "pg_inherits"
         WHERE "pg_class".oid = "pg_inherits".inhparent
     SQL
-
-    def self.load_child_tables
-      rows = ActiveRecord::Base.connection.execute(SQL_FOR_CHILD_TABLES).to_a
-      rows.map { |row|
-        ChildTable.new(
-          row['inhrelid'], row['inhparent'], row['inhseqno'],
-          row['oid'], row['name'], row['parent_table_name']
-        ).freeze
-      }
-    end
-
-    def self.load_parent_tables
-      rows = ActiveRecord::Base.connection.execute(SQL_FOR_PARENT_TABLES).to_a
-      rows.map { |row| ParentTable.new(row['oid'], row['name']).freeze }
-    end
 
     private_constant :ChildTable, :ParentTable, :SQL_FOR_CHILD_TABLES, :SQL_FOR_PARENT_TABLES
   end

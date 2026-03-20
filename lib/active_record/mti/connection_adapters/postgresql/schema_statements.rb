@@ -1,4 +1,3 @@
-require 'active_support/core_ext/hash/slice'
 require 'active_record/connection_adapters/postgresql_adapter'
 
 module ActiveRecord
@@ -7,14 +6,6 @@ module ActiveRecord
       module PostgreSQL
         module SchemaStatements
 
-          # Creates a new table with the name +table_name+.
-          #
-          # Adds :inherits option for PostgreSQL table inheritance. When a table
-          # inherits, the primary key is inherited from the parent, so we set
-          # id: false to avoid duplicating it, then manually add the PK constraint
-          # and copy indexes from the parent.
-          #
-          # Supports both positional options hash (Rails 5) and keyword args (Rails 7+).
           def create_table(table_name, **options)
             if (inherited_table = options.delete(:inherits))
               options[:id] = false
@@ -22,75 +13,69 @@ module ActiveRecord
               options[:options] = [%(INHERITS ("#{inherited_table}")), options[:options]].compact.join
             end
 
-            # Strip options that Rails doesn't recognize as create_table kwargs
             options.delete(:schema)
 
             super(table_name, **options) do |td|
               yield(td) if block_given?
-
               fix_inherits_statement(td) if inherited_table
             end.tap do
               inherit_indexes(table_name, inherited_table) if inherited_table
             end
           end
 
+          def parent_table(table_name)
+            parent_tables(table_name).first
+          end
+
+          def parent_tables(table_name)
+            escaped = table_name.to_s.gsub("'", "''")
+            exec_query(<<~SQL, 'SCHEMA').map { |row| row['relname'] }
+              SELECT pg_namespace.nspname, pg_class.relname
+              FROM pg_catalog.pg_inherits
+                INNER JOIN pg_catalog.pg_class ON (pg_inherits.inhparent = pg_class.oid)
+                INNER JOIN pg_catalog.pg_namespace ON (pg_class.relnamespace = pg_namespace.oid)
+              WHERE inhrelid = '#{escaped}'::regclass
+            SQL
+          end
+
+        private
+
           def fix_inherits_statement(td)
-            if td.respond_to?(:columns) && td.columns.empty? && ActiveRecord.version >= Gem::Version.new('5.0')
-              td.options.gsub!('INHERITS', '() INHERITS') if td.options.respond_to?(:gsub!)
-            end
+            return unless td.respond_to?(:columns) && td.columns.empty?
+            td.options.gsub!('INHERITS', '() INHERITS') if td.options.respond_to?(:gsub!)
           end
 
           def inherit_indexes(table_name, inherited_table)
-            inherited_table_primary_key = primary_key(inherited_table)
-            if inherited_table_primary_key
-              execute %(ALTER TABLE "#{table_name}" ADD PRIMARY KEY ("#{inherited_table_primary_key}"))
-            end
+            pk = primary_key(inherited_table)
+            execute %(ALTER TABLE "#{table_name}" ADD PRIMARY KEY ("#{pk}")) if pk
 
             indexes(inherited_table).each do |index|
-              attributes = index_attributes(index)
+              attrs = extract_index_attributes(index)
+              attrs[:order] = attrs.delete(:orders)
 
-              # Rails is inconsistent — indexes method returns :orders, add_index wants :order
-              attributes[:order] = attributes.delete(:orders)
-
-              if (index_name = build_index_name(attributes.delete(:name), inherited_table, table_name))
-                attributes[:name] = index_name
+              if (idx_name = build_index_name(attrs.delete(:name), inherited_table, table_name))
+                attrs[:name] = idx_name
               end
 
-              add_index table_name, index.columns, **attributes
+              add_index table_name, index.columns, **attrs
             end
           end
 
-          def index_attributes(index)
-            [:unique, :using, :where, :orders, :name].each_with_object({}) do |attribute, hash|
-              hash[attribute] = index.send(attribute)
+          def extract_index_attributes(index)
+            %i[unique using where orders name].each_with_object({}) do |attr, hash|
+              hash[attr] = index.public_send(attr)
             end
           end
 
           def build_index_name(index_name, inherited_table, table_name)
             return unless index_name
-            _schema_name, index_name = index_name.match(/((?<schema>.*)\.)?(?<index>.*)/).captures
-            if index_name.match(inherited_table.to_s)
-              index_name.gsub!(inherited_table.to_s, table_name.to_s)
-            else
-              index_name = "#{table_name}/#{index_name}"
-            end
-            [_schema_name, index_name].compact.join('.')
-          end
-
-          # Parent of inherited table
-          def parent_tables(table_name)
-            result = exec_query(<<~SQL, 'SCHEMA')
-              SELECT pg_namespace.nspname, pg_class.relname
-              FROM pg_catalog.pg_inherits
-                INNER JOIN pg_catalog.pg_class ON (pg_inherits.inhparent = pg_class.oid)
-                INNER JOIN pg_catalog.pg_namespace ON (pg_class.relnamespace = pg_namespace.oid)
-              WHERE inhrelid = '#{table_name}'::regclass
-            SQL
-            result.map { |a| a['relname'] }
-          end
-
-          def parent_table(table_name)
-            parent_tables(table_name).first
+            schema, name = index_name.match(/(?:(?<schema>.*)\.)?(?<name>.*)/).captures
+            name = if name.include?(inherited_table.to_s)
+                     name.gsub(inherited_table.to_s, table_name.to_s)
+                   else
+                     "#{table_name}/#{name}"
+                   end
+            [schema, name].compact.join('.')
           end
         end
       end
