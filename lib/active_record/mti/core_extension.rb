@@ -107,11 +107,12 @@ module ActiveRecord
           end
         end
 
-        # Rails 7.1+ optimizes _load_from_sql to skip discriminate_class_for_record
+        # Rails 7.0+ extracts _load_from_sql which skips discriminate_class_for_record
         # when the inheritance_column isn't in the result set. For MTI, we need
         # discrimination to happen when tableoid is present, so we force the
-        # instantiate path.
-        if ActiveRecord.version >= Gem::Version.new('7.1')
+        # instantiate path. Before 7.0, the logic was inline in find_by_sql and
+        # always called discriminate_class_for_record.
+        if ActiveRecord.version >= Gem::Version.new('7.0')
           def _load_from_sql(result_set, &block)
             if mti? && result_set.includes_column?('tableoid')
               column_types = result_set.column_types
