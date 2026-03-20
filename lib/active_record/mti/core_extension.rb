@@ -92,24 +92,59 @@ module ActiveRecord
           end
         end
 
-        # Rails 7.0+ extracts _load_from_sql and skips discriminate_class_for_record
-        # when the inheritance_column is absent. We force the instantiate path
-        # when tableoid is present so MTI class discrimination still fires.
+        # Rails skips discriminate_class_for_record when the inheritance_column
+        # isn't in the result set. For MTI, we need discrimination when tableoid
+        # is present. We intercept the instantiation entry point per version:
+        #
+        #   7.0+: _load_from_sql (extracted helper)
+        #   5.x-6.x: find_by_sql (inline logic, same branching)
+        #
+        # Both share force_mti_instantiation which routes through `instantiate`
+        # (calling discriminate_class_for_record) instead of `instantiate_instance_of`.
         if ActiveRecord.version >= Gem::Version.new('7.0')
           def _load_from_sql(result_set, &block)
             if mti? && result_set.includes_column?('tableoid')
-              column_types = result_set.column_types
-              column_types = column_types.reject { |k, _| attribute_types.key?(k) } unless column_types.empty?
-
-              ActiveSupport::Notifications.instrumenter.instrument(
-                "instantiation.active_record",
-                record_count: result_set.length, class_name: name
-              ) do
-                result_set.map { |record| instantiate(record, column_types, &block) }
-              end
+              force_mti_instantiation(result_set, &block)
             else
               super
             end
+          end
+        else
+          def find_by_sql(sql, binds = [], preparable: nil, &block)
+            result_set = connection.select_all(sanitize_sql(sql), "#{name} Load", binds, preparable: preparable)
+
+            if mti? && result_set.columns.include?('tableoid')
+              force_mti_instantiation(result_set, &block)
+            else
+              # Fall through to AR's standard instantiation (STI or homogeneous)
+              column_types = result_set.column_types
+              column_types = column_types.reject { |k, _| attribute_types.key?(k) } unless column_types.empty?
+
+              message_bus = ActiveSupport::Notifications.instrumenter
+              payload = { record_count: result_set.length, class_name: name }
+
+              message_bus.instrument("instantiation.active_record", payload) do
+                if result_set.columns.include?(inheritance_column)
+                  result_set.map { |record| instantiate(record, column_types, &block) }
+                else
+                  result_set.map { |record| instantiate_instance_of(self, record, column_types, &block) }
+                end
+              end
+            end
+          end
+        end
+
+      private
+
+        def force_mti_instantiation(result_set, &block)
+          column_types = result_set.column_types
+          column_types = column_types.reject { |k, _| attribute_types.key?(k) } unless column_types.empty?
+
+          ActiveSupport::Notifications.instrumenter.instrument(
+            "instantiation.active_record",
+            record_count: result_set.length, class_name: name
+          ) do
+            result_set.map { |record| instantiate(record, column_types, &block) }
           end
         end
 
