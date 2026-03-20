@@ -12,7 +12,7 @@ module ActiveRecord
         base.singleton_class.prepend(ClassMethods)
       end
 
-      module ClassMethods #:nodoc:
+      module ClassMethods
 
         def sti_or_mti?
           !abstract_class? && self != base_class
@@ -32,17 +32,13 @@ module ActiveRecord
         end
 
         def reset_mti_information
-          reinitialize_relation_delegate_cache
-
           ActiveRecord::MTI[mti_table.oid] = nil if mti?
-          @mti_table                       = nil
-          @columns_hash&.delete("tableoid")
+          @mti_table = nil
+          @columns_hash&.delete("tableoid") unless @columns_hash&.frozen?
         end
 
         def reset_column_information
-          super.tap do
-            reset_mti_information
-          end
+          super.tap { reset_mti_information }
         end
 
         def tableoid?
@@ -55,33 +51,24 @@ module ActiveRecord
 
         def mti_table=(value)
           @mti_table = value
+          return unless mti_table
 
-          if mti_table
-            self.attribute :tableoid, ActiveRecord::MTI.oid_class.new
-
-            ActiveRecord::MTI.registry[mti_table.oid] = self
-
-            @relation_delegate_cache.each do |_klass, delegate|
-              delegate.prepend(::ActiveRecord::MTI::Relation)
-            end
-          end
+          attribute :tableoid, ActiveRecord::MTI.oid_class.new
+          ActiveRecord::MTI[mti_table.oid] = self
+          prepend_mti_relation
         end
 
         def table_name=(value)
-          super.tap do
-            reset_mti_table if connected?
-          end
+          super.tap { reset_mti_table if connected? }
         end
 
         def load_schema!
-          super.tap do
-            add_tableoid_column if mti?
-          end
+          super.tap { add_tableoid_column if mti? }
         end
 
         def reset_mti_table
-          mti_table_name = defined?(@table_name) ? @table_name : compute_mti_table_name
-          self.mti_table = ActiveRecord::MTI::Table.find(self, mti_table_name)
+          name = defined?(@table_name) ? @table_name : compute_mti_table_name
+          self.mti_table = ActiveRecord::MTI::Table.find(self, name)
         end
 
         def compute_table_name
@@ -97,8 +84,6 @@ module ActiveRecord
           "#{full_table_name_prefix}#{contained}#{undecorated_table_name(name)}#{full_table_name_suffix}"
         end
 
-        # Called by +instantiate+ to decide which class to use for a new
-        # record instance. MTI class discrimination happens before STI.
         def discriminate_class_for_record(record)
           if (mti_class = ::ActiveRecord::MTI[record.delete('tableoid')])
             mti_class.discriminate_class_for_record(record)
@@ -107,23 +92,19 @@ module ActiveRecord
           end
         end
 
-        # Rails 7.0+ extracts _load_from_sql which skips discriminate_class_for_record
-        # when the inheritance_column isn't in the result set. For MTI, we need
-        # discrimination to happen when tableoid is present, so we force the
-        # instantiate path. Before 7.0, the logic was inline in find_by_sql and
-        # always called discriminate_class_for_record.
+        # Rails 7.0+ extracts _load_from_sql and skips discriminate_class_for_record
+        # when the inheritance_column is absent. We force the instantiate path
+        # when tableoid is present so MTI class discrimination still fires.
         if ActiveRecord.version >= Gem::Version.new('7.0')
           def _load_from_sql(result_set, &block)
             if mti? && result_set.includes_column?('tableoid')
               column_types = result_set.column_types
-              unless column_types.empty?
-                column_types = column_types.reject { |k, _| attribute_types.key?(k) }
-              end
+              column_types = column_types.reject { |k, _| attribute_types.key?(k) } unless column_types.empty?
 
-              message_bus = ActiveSupport::Notifications.instrumenter
-              payload = { record_count: result_set.length, class_name: name }
-
-              message_bus.instrument("instantiation.active_record", payload) do
+              ActiveSupport::Notifications.instrumenter.instrument(
+                "instantiation.active_record",
+                record_count: result_set.length, class_name: name
+              ) do
                 result_set.map { |record| instantiate(record, column_types, &block) }
               end
             else
@@ -140,8 +121,6 @@ module ActiveRecord
           col = build_tableoid_column
           return unless col
 
-          # Rails 7.0+ freezes columns_hash after load_schema!.
-          # We need to replace it with a new hash that includes tableoid.
           if columns_hash.frozen?
             @columns_hash = columns_hash.merge("tableoid" => col).freeze
           else
@@ -149,47 +128,38 @@ module ActiveRecord
           end
         end
 
+      private
+
+        def prepend_mti_relation
+          if defined?(@relation_delegate_cache) && @relation_delegate_cache
+            @relation_delegate_cache.each_value { |delegate| delegate.prepend(::ActiveRecord::MTI::Relation) }
+          end
+        end
+
         def build_tableoid_column
           field = synthesize_tableoid_field
-          factory = connection.method(:new_column_from_field)
+          arity = connection.method(:new_column_from_field).arity
 
-          case factory.arity
-          when 3
-            # Rails 7.1+: (table_name, field, definitions)
+          if arity == 3 || arity <= -3
             definitions = connection.send(:column_definitions, table_name)
             connection.send(:new_column_from_field, table_name, field, definitions)
           else
-            # Rails 5.x - 7.0: (table_name, field)
             connection.send(:new_column_from_field, table_name, field)
           end
-        rescue => e
-          # If column construction fails, the attribute API registration
-          # from mti_table= is still active — queries will still work,
-          # we just won't have a columns_hash entry.
+        rescue ActiveRecord::StatementInvalid, ArgumentError => e
+          Rails.logger.warn("[active_record-mti] Failed to build tableoid column: #{e.message}") if defined?(Rails.logger) && Rails.logger
           nil
         end
 
         def synthesize_tableoid_field
-          # column_definitions returns arrays whose length grew over Rails versions:
-          # Rails 5.x: [name, type, default, notnull, oid, fmod, collation, comment]
-          # Rails 7.0: + attgenerated
-          # Rails 8.0: + attidentity
           base = ['tableoid', 'oid', nil, false, 26, -1]
           if ActiveRecord.version >= Gem::Version.new('8.0')
-            base + [nil, nil, nil, nil]  # collation, comment, identity, generated
+            base + [nil, nil, nil, nil]
           elsif ActiveRecord.version >= Gem::Version.new('7.0')
-            base + [nil, nil, nil]       # collation, comment, generated
+            base + [nil, nil, nil]
           else
-            base + [nil, nil]            # collation, comment
+            base + [nil, nil]
           end
-        end
-
-        def reinitialize_relation_delegate_cache
-          @relation_delegate_cache.each do |klass, _delegate|
-            mangled_name = klass.name.gsub("::", "_")
-            remove_const(mangled_name) if const_defined?(mangled_name, false)
-          end
-          initialize_relation_delegate_cache
         end
 
       end
