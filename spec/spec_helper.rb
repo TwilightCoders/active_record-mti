@@ -12,6 +12,17 @@ SimpleCov.start do
 end
 
 Combustion.path = 'spec/support/rails'
+
+# Rails 5.2 + newer Rack raises NoMethodError on middleware `operations`.
+# We only need :active_record, so suppress the middleware stack build.
+if defined?(ActionDispatch::MiddlewareStack) && !ActionDispatch::MiddlewareStack.method_defined?(:operations)
+  ActionDispatch::MiddlewareStack.class_eval do
+    def operations
+      @operations ||= []
+    end
+  end
+end
+
 Combustion.initialize! :active_record
 
 RSpec.configure do |config|
