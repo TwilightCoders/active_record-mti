@@ -1,0 +1,49 @@
+#!/usr/bin/env bash
+# Run specs against all Rails version gemfiles.
+# Usage: bin/test-matrix [gemfile_pattern]
+# Examples:
+#   bin/test-matrix              # run all
+#   bin/test-matrix 7.1          # run only Rails 7.1
+#   bin/test-matrix "5.*"        # run all Rails 5.x
+
+set -e
+
+GEMFILE_DIR="$(dirname "$0")/../gemfiles"
+PATTERN="${1:-*}"
+PASSED=()
+FAILED=()
+SKIPPED=()
+
+for gemfile in "$GEMFILE_DIR"/activerecord-${PATTERN}.Gemfile "$GEMFILE_DIR"/activerecord-${PATTERN}.gemfile; do
+  [ -f "$gemfile" ] || continue
+  version=$(basename "$gemfile" | sed 's/activerecord-//; s/\.Gemfile//i; s/\.gemfile//i')
+
+  echo "============================================"
+  echo "  Rails ${version}"
+  echo "============================================"
+
+  export BUNDLE_GEMFILE="$gemfile"
+
+  if bundle install --quiet 2>/dev/null; then
+    if bundle exec rspec --format progress; then
+      PASSED+=("$version")
+    else
+      FAILED+=("$version")
+    fi
+  else
+    echo "  SKIP — bundle install failed"
+    SKIPPED+=("$version")
+  fi
+
+  echo ""
+done
+
+echo "============================================"
+echo "  RESULTS"
+echo "============================================"
+[ ${#PASSED[@]} -gt 0 ] && echo "  PASS: ${PASSED[*]}"
+[ ${#FAILED[@]} -gt 0 ] && echo "  FAIL: ${FAILED[*]}"
+[ ${#SKIPPED[@]} -gt 0 ] && echo "  SKIP: ${SKIPPED[*]}"
+echo ""
+
+[ ${#FAILED[@]} -eq 0 ] || exit 1
