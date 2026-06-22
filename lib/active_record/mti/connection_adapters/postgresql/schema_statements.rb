@@ -43,7 +43,11 @@ module ActiveRecord
             inherited_table_primary_key = primary_key(inherited_table)
             execute %(ALTER TABLE "#{table_name}" ADD PRIMARY KEY ("#{inherited_table_primary_key}"))
 
-            indexes(inherited_table).each do |index|
+            # Skip spanning (GLOBAL) indexes: a GLOBAL index on the parent already spans its
+            # inheritance children, so the child must not get its own copy. `global?` is
+            # contributed by active_record-progresql; absent it, respond_to? is false and
+            # nothing is skipped (plain-PostgreSQL behavior unchanged).
+            indexes(inherited_table).reject { |index| index.respond_to?(:global?) && index.global? }.each do |index|
               attributes = index_attributes(index)
 
               # Why rails insists on being inconsistant with itself is beyond me.
@@ -53,7 +57,8 @@ module ActiveRecord
                 attributes[:name] = index_name
               end
 
-              add_index table_name, index.columns, attributes
+              # ActiveRecord 8.1's add_index takes keyword options, not a positional hash.
+              add_index table_name, index.columns, **attributes
             end
           end
 
