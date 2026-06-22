@@ -17,14 +17,14 @@ module ActiveRecord
           # However the primary key column from the parent is not inherited as primary key so
           # we manually add it.  Lastly we also create indexes on the child table to match those
           # on the parent table since indexes are also not inherited.
-          def create_table(table_name, options = {})
+          def create_table(table_name, **options)
             if (inherited_table = options.delete(:inherits))
               options[:id] = false
               options.delete(:primary_key)
               options[:options] = [%(INHERITS ("#{inherited_table}")), options[:options]].compact.join
             end
 
-            super(table_name, options) do |td|
+            super(table_name, **options) do |td|
               yield(td) if block_given?
 
               fix_inherits_statement(td) if inherited_table

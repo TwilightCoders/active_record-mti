@@ -30,9 +30,7 @@ module ActiveRecord
     end
 
     def self.postgresql_version
-      @postgresql_version ||= Gem::Version.new(ActiveRecord::Base.connection.execute(<<-SQL, 'SCHEMA').to_a.first['server_version'])
-        SHOW server_version;
-      SQL
+      @postgresql_version ||= Gem::Version.new(query_pg_version.match(/(\d\.?)+/)[0])
     end
 
     def self.[](key)
@@ -49,6 +47,12 @@ module ActiveRecord
 
   private
 
+    def self.query_pg_version
+      ActiveRecord::Base.connection.execute(<<-SQL, 'SCHEMA').to_a.first['server_version']
+        SHOW server_version;
+      SQL
+    end
+
     def self.registry
       @registry ||= {}
     end
@@ -63,7 +67,8 @@ module ActiveRecord
     ParentTable = Struct.new(:oid, :name)
 
     SQL_FOR_CHILD_TABLES = (<<-SQL).gsub(/\s+/, " ").strip
-      SELECT "pg_inherits".*, "child".oid AS oid, "child".relname AS name, "parent".relname AS parent_table_name
+      SELECT "pg_inherits".inhrelid, "pg_inherits".inhparent, "pg_inherits".inhseqno,
+             "child".oid AS oid, "child".relname AS name, "parent".relname AS parent_table_name
         FROM "pg_inherits"
         JOIN "pg_class" AS "child" ON ("child".oid = "pg_inherits".inhrelid)
         JOIN "pg_class" AS "parent" ON ("parent".oid = "pg_inherits".inhparent)

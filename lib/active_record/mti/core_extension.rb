@@ -32,14 +32,8 @@ module ActiveRecord
         end
 
         def reset_mti_information
-          # This might be "dangerous" if other gems have modified them as well.
-          # It might be more prudent to call "inherited" which calls this as a
-          # shared injection point, to play nice with other gems. (DeletedAt?)
           reinitialize_relation_delegate_cache
 
-          # ActiveRecord::MTI.registry[mti_table&.oid] = self # maybe follow schema_cache pattern for this stuff
-          # connection.mti_cache.clear_table_cache!(table_name)
-          # ActiveRecord::MTI.delete(mti_table.oid)
           ActiveRecord::MTI[mti_table.oid] = nil if mti?
           @mti_table                       = nil
           @columns_hash&.delete("tableoid")
@@ -60,17 +54,11 @@ module ActiveRecord
         end
 
         def mti_table=(value)
-          # if defined?(@mti_table)
-          #   return if value == @mti_table
-          #   reset_column_information if connected?
-          # end
-
           @mti_table = value
 
           if mti_table
             self.attribute :tableoid, ActiveRecord::MTI.oid_class.new
 
-            # TODO: Use the list to retrieve ActiveRecord_Relation?
             ActiveRecord::MTI.registry[mti_table.oid] = self
 
             @relation_delegate_cache.each do |klass, delegate|
@@ -85,16 +73,12 @@ module ActiveRecord
           end
         end
 
-        # NOTE: 5.0+ only
         def load_schema!
-          super.tap do |attributes|
-            add_tableoid_column if mti?
-          end
+          super
         end
 
         def reset_mti_table
           mti_table_name = defined?(@table_name) ? @table_name : compute_mti_table_name
-          # mti_table_name = @table_name || compute_mti_table_name
           self.mti_table = ActiveRecord::MTI::Table.find(self, mti_table_name)
         end
 
@@ -103,7 +87,6 @@ module ActiveRecord
         end
 
         def compute_mti_table_name
-          # contained = (parent_name || '').split('::').join('/') { |part| part.downcase.singularize }
           if superclass < ::ActiveRecord::Base && !superclass.abstract_class?
             contained = superclass.table_name
             contained = contained.singularize if superclass.pluralize_table_names
@@ -112,19 +95,6 @@ module ActiveRecord
           "#{full_table_name_prefix}#{contained}#{undecorated_table_name(name)}#{full_table_name_suffix}"
         end
 
-        # Returns +true+ if this does not need STI type condition. Returns
-        # +false+ if STI type condition needs to be applied.
-        # def descends_from_active_record?
-        #   a = mti?
-        #   b = super
-        #   c = superclass.respond_to?(:descends_from_active_record?) ? superclass.descends_from_active_record? : true
-        #   # !(a || b || c) || !(!b || c) || (a && b && c)
-        #   (!a && !b && c) || b
-        # end
-
-        # Called by +instantiate+ to decide which class to use for a new
-        # record instance. For single-table inheritance, we check the record
-        # for a +type+ column and return the corresponding class.
         def discriminate_class_for_record(record)
           if (mti_class = ::ActiveRecord::MTI[record.delete('tableoid')])
             mti_class.discriminate_class_for_record(record)
@@ -133,23 +103,22 @@ module ActiveRecord
           end
         end
 
-        # Type condition only applies if it's STI, otherwise it's
-        # done for free by querying the inherited table in MTI
-
       protected
 
         def add_tableoid_column
-          # missing_columns = (attributes.keys - @columns_hash.keys)
-          # [column_name, type, default, notnull, oid, fmod, collation, comment]
-          # field = ["tableoid", "integer", nil, false, 23, -1]
-          # column = connection.send(:new_column_from_field, table_name, field)
-          # Until support for 5.0 is dropped, we need this, because the internal API changed.
-          column = ::ActiveRecord::ConnectionAdapters::PostgreSQLColumn.new(
-            'tableoid',
+          # Build a proper Column object compatible with Rails 8.x
+          # tableoid is a system column (OID type, oid=26) that PG manages
+          cast_type = ActiveRecord::MTI.oid_class.new
+          sql_type_metadata = ActiveRecord::ConnectionAdapters::SqlTypeMetadata.new(
+            sql_type: "oid",
+            type: :integer
+          )
+          column = ActiveRecord::ConnectionAdapters::Column.new(
+            "tableoid",
+            cast_type,
             nil,
-            23,
-            false,
-            table_name,
+            sql_type_metadata,
+            true,
             nil
           )
 
@@ -158,8 +127,8 @@ module ActiveRecord
 
         def reinitialize_relation_delegate_cache
           @relation_delegate_cache.each do |klass, delegate|
-            mangled_name = klass.name.gsub("::".freeze, "_".freeze)
-            remove_const(mangled_name)
+            mangled_name = klass.name.gsub("::", "_")
+            remove_const(mangled_name) if const_defined?(mangled_name, false)
           end
           initialize_relation_delegate_cache
         end

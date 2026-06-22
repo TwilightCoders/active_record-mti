@@ -1,0 +1,22 @@
+{
+	"folders": [
+		{
+			"path": "active_record-fdw"
+		},
+		{
+			"path": "active_record-framing"
+		},
+		{
+			"path": "active_record-mti"
+		},
+		{
+			"path": "active_record-narcissus"
+		},
+		{
+			"path": "active_record-partitioned"
+		},
+		{
+			"path": "deleted_at"
+		}
+	]
+}

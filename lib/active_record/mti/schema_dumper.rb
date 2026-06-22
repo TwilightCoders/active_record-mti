@@ -1,4 +1,4 @@
-require 'core_ext/hash'
+require_relative '../../core_ext/hash'
 
 # Modified SchemaDumper that knows how to dump
 # inherited tables. Key is that we have to dump parent
