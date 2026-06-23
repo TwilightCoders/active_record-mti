@@ -11,7 +11,9 @@ describe ActiveRecord::MTI::Relation do
   context 'complex queries' do
     it 'discriminates class' do
       sql = User.select(User.arel_table[:tableoid]).eager_load(:comments, posts: :comments ).to_sql
-      expect(sql).to match(/\"users\".\"tableoid\" AS t\d_r\d/)
+      # AR 8.1 projects an explicitly-selected tableoid as "users"."tableoid" (no
+      # t<n>_r<n> alias); discrimination still works (verified) as long as it's present.
+      expect(sql).to match(/\"users\".\"tableoid\"/)
     end
   end
 

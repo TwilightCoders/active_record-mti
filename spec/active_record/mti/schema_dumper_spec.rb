@@ -1,10 +1,6 @@
 require 'spec_helper'
 
 describe ActiveRecord::MTI::SchemaDumper do
-  before(:each) do
-    ActiveRecord::SchemaMigration.create_table
-  end
-
   let(:hacker_sql) do
     <<~RUBY
       create_table "user/admin/hackers", inherits: 'user/admins' do |t|
@@ -13,7 +9,8 @@ describe ActiveRecord::MTI::SchemaDumper do
 
   it 'does not dump indexes for child table' do
     stream = StringIO.new
-    ActiveRecord::SchemaDumper.dump(ActiveRecord::Base.connection, stream)
+    # AR 8.1's SchemaDumper.dump takes a connection pool, not a connection.
+    ActiveRecord::SchemaDumper.dump(ActiveRecord::Base.connection_pool, stream)
 
     expect(stream.string).to include(hacker_sql)
   end

@@ -25,8 +25,11 @@ describe ActiveRecord::MTI::CoreExtension do
   end
 
   describe 'model' do
-    it "shows tableoid column" do
-      expect(User.column_names).to include("tableoid")
+    it "exposes tableoid as an attribute" do
+      # Under AR 8.1 columns_hash is frozen and the adapter filters the tableoid
+      # system column out of the real column list, so the gem models tableoid as a
+      # virtual attribute (self.attribute :tableoid) rather than a table column.
+      expect(User.attribute_names).to include("tableoid")
     end
   end
 
