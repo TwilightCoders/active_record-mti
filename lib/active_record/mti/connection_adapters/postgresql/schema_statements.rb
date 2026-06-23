@@ -34,7 +34,14 @@ module ActiveRecord
           end
 
           def fix_inherits_statement(td)
-            if td.columns.empty? && ActiveRecord.version >= Gem::Version.new('5.0')
+            # Postgres needs an explicit empty column list before INHERITS only when the
+            # table body is otherwise empty: `CREATE TABLE child () INHERITS (parent)`.
+            # If the table emits ANY parenthesized group — columns OR constraints — Rails
+            # already supplies the `(...)`, and prepending `()` yields an invalid double
+            # group: `(CONSTRAINT ...) () INHERITS (...)`. So only inject `()` for a body
+            # that is truly empty (no columns AND no check constraints).
+            body_empty = td.columns.empty? && (td.try(:check_constraints) || []).empty?
+            if body_empty && ActiveRecord.version >= Gem::Version.new('5.0')
               td.options.gsub!('INHERITS', '() INHERITS')
             end
           end
