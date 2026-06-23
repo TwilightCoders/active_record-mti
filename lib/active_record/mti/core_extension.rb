@@ -95,8 +95,47 @@ module ActiveRecord
           "#{full_table_name_prefix}#{contained}#{undecorated_table_name(name)}#{full_table_name_suffix}"
         end
 
+        # AR 8.1's `_load_from_sql` only takes the per-row discriminating `instantiate`
+        # path when the result includes the STI `inheritance_column` ("type"); otherwise
+        # it fast-paths to a homogeneous set of `self`. MTI discriminates on `tableoid`,
+        # so without this, parent→child queries (e.g. an association that resolves to a
+        # subclass) silently come back as the base class. We mirror AR's method exactly,
+        # only widening the discriminate condition to also fire when `tableoid` is present.
+        def _load_from_sql(result_set, &block)
+          return super unless mti?
+          return [] if result_set.empty?
+
+          column_types = result_set.column_types
+          unless column_types.empty?
+            column_types = column_types.reject { |k, _| attribute_types.key?(k) }
+          end
+
+          discriminate = result_set.includes_column?(inheritance_column) ||
+                         result_set.includes_column?('tableoid')
+
+          ActiveSupport::Notifications.instrumenter.instrument(
+            "instantiation.active_record",
+            record_count: result_set.length, class_name: name
+          ) do
+            if discriminate
+              result_set.indexed_rows.map { |record| instantiate(record, column_types, &block) }
+            else
+              result_set.indexed_rows.map { |record| instantiate_instance_of(self, record, column_types, &block) }
+            end
+          end
+        end
+
         def discriminate_class_for_record(record)
-          if (mti_class = ::ActiveRecord::MTI[record.delete('tableoid')])
+          # AR 8.1 hands us an ActiveRecord::Result::IndexedRow (read-only, no #delete),
+          # so read the oid via #[] instead of mutating the row. The previous `delete`
+          # also terminated the recursion (the recursive call saw a nil tableoid and fell
+          # through to `super`); we reproduce that with the `mti_class != self` guard:
+          # once the row's tableoid resolves to the current class we hand off to `super`,
+          # which is AR's STI discrimination via the `type` column — also how an MTI branch
+          # with an STI leaf gets resolved.
+          oid = record['tableoid'] if record.respond_to?(:[])
+          mti_class = oid && ::ActiveRecord::MTI[oid]
+          if mti_class && mti_class != self
             mti_class.discriminate_class_for_record(record)
           else
             super
