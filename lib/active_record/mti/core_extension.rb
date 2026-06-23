@@ -46,7 +46,12 @@ module ActiveRecord
         end
 
         def tableoid?
-          !Thread.currently?(:skip_tableoid_cast) && mti?
+          # Evaluate mti? first: resolving mti_table has the side effect of registering
+          # this class in the oid->class map used for discrimination. Gating it behind the
+          # transient skip_tableoid_cast flag (set during calculations) would let a class
+          # first touched inside a count/sum go unregistered, breaking later parent->child
+          # discrimination in an order-dependent way. The boolean result is unchanged.
+          mti? && !Thread.currently?(:skip_tableoid_cast)
         end
 
         def tableoid
@@ -60,10 +65,6 @@ module ActiveRecord
             self.attribute :tableoid, ActiveRecord::MTI.oid_class.new
 
             ActiveRecord::MTI.registry[mti_table.oid] = self
-
-            @relation_delegate_cache.each do |klass, delegate|
-              delegate.prepend(::ActiveRecord::MTI::Relation)
-            end
           end
         end
 
@@ -135,6 +136,19 @@ module ActiveRecord
           # with an STI leaf gets resolved.
           oid = record['tableoid'] if record.respond_to?(:[])
           mti_class = oid && ::ActiveRecord::MTI[oid]
+
+          # The oid->class registry is populated lazily (a side effect of a class first
+          # resolving its mti_table), so a parent query can hit a row whose subclass hasn't
+          # registered yet. Self-heal: resolve the oid to its loaded class via the catalog,
+          # preferring the class that owns the table (its STI base) over any STI leaf that
+          # shares it, then cache it. This makes discrimination independent of the order in
+          # which classes were first touched.
+          if mti_class.nil? && oid && (child = ::ActiveRecord::MTI.child_tables.find(oid: oid))
+            owning = descendants.select { |d| d.table_name == child.name }
+            mti_class = owning.find { |d| d.superclass.table_name != child.name } || owning.first
+            ::ActiveRecord::MTI.registry[oid] = mti_class if mti_class
+          end
+
           if mti_class && mti_class != self
             mti_class.discriminate_class_for_record(record)
           else
