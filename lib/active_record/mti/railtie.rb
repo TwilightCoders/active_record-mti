@@ -13,6 +13,13 @@ module ActiveRecord
           ::ActiveRecord::ConnectionAdapters::PostgreSQLAdapter.prepend(ConnectionAdapters::PostgreSQL::Adapter)
           ::ActiveRecord::ConnectionAdapters::PostgreSQLAdapter.prepend(ConnectionAdapters::PostgreSQL::SchemaStatements)
           ::ActiveRecord::SchemaDumper.prepend(SchemaDumper)
+
+          # Prepend the MTI relation behavior once, globally. build_mti is a no-op unless
+          # the relation's klass is MTI (klass.tableoid?), so this is safe for every model
+          # and avoids the order-dependent fragility of prepending into each class's
+          # relation_delegate_cache (delegates created lazily after that point would
+          # otherwise miss the patch and silently drop tableoid projection/discrimination).
+          ::ActiveRecord::Relation.prepend(::ActiveRecord::MTI::Relation)
         end
       end
     end
