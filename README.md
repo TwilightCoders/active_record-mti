@@ -4,8 +4,8 @@ ActiveRecord support for PostgreSQL's native inherited tables (multi-table inher
 
 ## Requirements
 
-- Ruby **2.5+**
-- ActiveRecord **5.0+**
+- Ruby **2.7+**
+- ActiveRecord **5.2+** (tested through Rails 8.1)
 - PostgreSQL **9.4+**
 
 ## Installation

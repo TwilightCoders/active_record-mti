@@ -1,6 +1,15 @@
 # ActiveRecord::MTI
 
 ## 0.5.0 _(Unreleased)_
+- **Rails 8.0 / 8.1 compatibility** — read the discriminator from the read-only
+  `ActiveRecord::Result::IndexedRow` (no `#delete`) that Rails 7.2+/8.x passes to
+  `discriminate_class_for_record`, bounding the STI-leaf recursion with a
+  `mti_class != self` guard
+- Guard empty-`INHERITS` `create_table` against a CHECK-constraint double-group:
+  a column-less table with a CHECK already emits `(CONSTRAINT ...)`, so only inject
+  the `()` column list when there are no columns **and** no check constraints
+- Full **Rails 5.2 → 8.1** CI matrix (GitHub Actions), one row per Rails on the latest
+  Ruby it supports; pin `pg ~> 1.5` on Ruby < 3.0; added Qlty config + coverage upload
 - **Rails 7.1 compatibility** — fixed `_load_from_sql` override for Rails 7.1+
   which skips `discriminate_class_for_record` when the inheritance column is
   absent from the result set
@@ -17,8 +26,8 @@
 - Replaced Thread monkey-patch with `ThreadContext` module
 - Replaced `Hash#&` monkey-patch with inline set intersection
 - Dropped `registry` gem dependency — uses plain Hash + Array#detect
-- Added Gemfiles for Rails 6.0, 6.1, 7.0, 7.1, 7.2, 8.0
-- Bumped minimum Ruby to 2.5, minimum Rails to 5.0
+- Added Gemfiles for Rails 6.0, 6.1, 7.0, 7.1, 7.2, 8.0, 8.1
+- Bumped minimum Ruby to 2.7, minimum Rails to 5.2
 
 ## 0.4.0 _(Unreleased)_
 - Major overhaul to improve injection hygiene and performance
