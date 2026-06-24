@@ -2,35 +2,28 @@ name: CI
 
 on:
   push:
-    branches: [main, develop, overhaul]
+    branches: [main, develop]
   pull_request:
     branches: [main, develop]
 
 jobs:
   test:
+    name: Rails ${{ matrix.rails }} (Ruby ${{ matrix.ruby }})
     runs-on: ubuntu-latest
 
     strategy:
       fail-fast: false
       matrix:
+        # One row per supported Rails, on the latest Ruby that Rails can use.
         include:
-          # Rails 7.2
-          - { ruby: '3.3', rails: '7.2', postgres: '17' }
-          - { ruby: '3.2', rails: '7.2', postgres: '15' }
-          - { ruby: '3.1', rails: '7.2', postgres: '17' }
-          # Rails 7.1
-          - { ruby: '3.3', rails: '7.1', postgres: '17' }
-          - { ruby: '3.2', rails: '7.1', postgres: '15' }
-          - { ruby: '3.0', rails: '7.1', postgres: '17' }
-          # Rails 7.0
-          - { ruby: '3.2', rails: '7.0', postgres: '17' }
-          - { ruby: '3.0', rails: '7.0', postgres: '15' }
-          # Rails 6.1
-          - { ruby: '3.0', rails: '6.1', postgres: '15' }
-          # Rails 6.0
-          - { ruby: '2.7', rails: '6.0', postgres: '15' }
-          # Rails 5.2
-          - { ruby: '2.7', rails: '5.2', postgres: '15' }
+          - { ruby: '2.7', rails: '5.2', postgres: '16' }
+          - { ruby: '2.7', rails: '6.0', postgres: '16' }
+          - { ruby: '3.1', rails: '6.1', postgres: '16' }
+          - { ruby: '3.3', rails: '7.0', postgres: '16' }
+          - { ruby: '3.3', rails: '7.1', postgres: '16' }
+          - { ruby: '3.4', rails: '7.2', postgres: '16' }
+          - { ruby: '3.4', rails: '8.0', postgres: '16' }
+          - { ruby: '3.4', rails: '8.1', postgres: '16' }
 
     services:
       postgres:

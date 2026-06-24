@@ -74,5 +74,6 @@ Icon?
 ehthumbs.db
 Thumbs.db
 /Gemfile.lock
+gemfiles/*.lock
 /coverage
 /.editorconfig
