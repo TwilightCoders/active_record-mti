@@ -1,0 +1,57 @@
+# This file configures Qlty code quality and coverage tools
+# For configuration guide: https://qlty.sh/d/config
+# For full reference: https://qlty.sh/d/qlty-toml
+
+config_version = "0"
+
+exclude_patterns = [
+  "*_min.*",
+  "*-min.*",
+  "*.min.*",
+  "**/*.d.ts",
+  "**/node_modules/**",
+  "**/vendor/**",
+  "**/coverage/**",
+  "**/tmp/**",
+  "**/pkg/**",
+  "**/gemfiles/**",
+  "**/.bundle/**",
+]
+
+test_patterns = [
+  "**/test/**",
+  "**/spec/**",
+  "**/*.test.*",
+  "**/*.spec.*",
+  "**/*_test.*",
+  "**/*_spec.*",
+]
+
+[smells]
+mode = "comment"
+
+[[source]]
+name = "default"
+default = true
+
+[[plugin]]
+name = "actionlint"
+
+[[plugin]]
+name = "markdownlint"
+drivers = ["lint"]
+mode = "comment"
+
+[[plugin]]
+name = "ripgrep"
+mode = "comment"
+
+[[plugin]]
+name = "trivy"
+drivers = ["config"]
+
+[[plugin]]
+name = "trufflehog"
+
+[[plugin]]
+name = "yamllint"
