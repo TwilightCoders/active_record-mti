@@ -40,6 +40,10 @@ module ActiveRecord
 
           def fix_inherits_statement(td)
             return unless td.respond_to?(:columns) && td.columns.empty?
+            # Only inject the empty column list when the body is *truly* empty. A table with
+            # a CHECK constraint already emits a "(CONSTRAINT ...)" group, so prepending "()"
+            # would produce the invalid double group "(CONSTRAINT ...) () INHERITS (...)".
+            return unless (td.try(:check_constraints) || []).empty?
             td.options.gsub!('INHERITS', '() INHERITS') if td.options.respond_to?(:gsub!)
           end
 
