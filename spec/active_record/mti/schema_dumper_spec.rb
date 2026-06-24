@@ -27,7 +27,13 @@ describe ActiveRecord::MTI::SchemaDumper do
 
   it 'does not dump indexes for child table' do
     stream = StringIO.new
-    ActiveRecord::SchemaDumper.dump(ActiveRecord::Base.connection, stream)
+    # Rails 7.2+ SchemaDumper.dump takes a connection pool; earlier versions take a connection.
+    target = if ActiveRecord.gem_version >= Gem::Version.new('7.2')
+               ActiveRecord::Base.connection_pool
+             else
+               ActiveRecord::Base.connection
+             end
+    ActiveRecord::SchemaDumper.dump(target, stream)
 
     expect(stream.string).to include(hacker_sql)
   end

@@ -85,7 +85,15 @@ module ActiveRecord
         end
 
         def discriminate_class_for_record(record)
-          if (mti_class = ::ActiveRecord::MTI[record.delete('tableoid')])
+          # Rails <= 7.1 hands us a mutable Hash; Rails 7.2+/8.x hands us a read-only
+          # ActiveRecord::Result::IndexedRow (no #delete). Read the oid without mutating
+          # when we can't delete. The old `delete` also terminated the recursion (the
+          # recursive call saw a nil tableoid and fell through to super); reproduce that
+          # with the `mti_class != self` guard so an MTI branch with an STI leaf still
+          # hands off to super (STI discrimination via the type column).
+          oid = record.respond_to?(:delete) ? record.delete('tableoid') : record['tableoid']
+          mti_class = oid && ::ActiveRecord::MTI[oid]
+          if mti_class && mti_class != self
             mti_class.discriminate_class_for_record(record)
           else
             super
