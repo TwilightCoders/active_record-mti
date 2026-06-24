@@ -51,7 +51,11 @@ module ActiveRecord
             pk = primary_key(inherited_table)
             execute %(ALTER TABLE "#{table_name}" ADD PRIMARY KEY ("#{pk}")) if pk
 
-            indexes(inherited_table).each do |index|
+            # Skip GLOBAL (spanning) indexes: a GLOBAL index on the parent already spans its
+            # inheritance children, so the child must not get its own copy. `global?` is
+            # contributed by active_record-progresql; on plain PostgreSQL indexes don't respond
+            # to it, so this reject is a no-op (vanilla behavior unchanged).
+            indexes(inherited_table).reject { |index| index.respond_to?(:global?) && index.global? }.each do |index|
               attrs = extract_index_attributes(index)
               attrs[:order] = attrs.delete(:orders)
 
