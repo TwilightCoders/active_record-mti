@@ -100,65 +100,23 @@ module ActiveRecord
           end
         end
 
-        # Rails skips discriminate_class_for_record when the inheritance_column
-        # isn't in the result set. For MTI, we need discrimination when tableoid
-        # is present. We intercept the instantiation entry point per version:
-        #
-        #   7.0+: _load_from_sql (extracted helper)
-        #   5.x-6.x: find_by_sql (inline logic, same branching)
-        #
-        # Both share force_mti_instantiation which routes through `instantiate`
-        # (calling discriminate_class_for_record) instead of `instantiate_instance_of`.
-        if ActiveRecord.version >= Gem::Version.new('7.0')
-          # 7.0+ extracted _load_from_sql which branches on inheritance_column.
-          def _load_from_sql(result_set, &block)
-            if mti? && result_set.includes_column?('tableoid')
-              force_mti_instantiation(result_set, &block)
-            else
-              super
-            end
-          end
-        elsif ActiveRecord.version >= Gem::Version.new('6.0')
-          # 6.0-6.x: find_by_sql branches on inheritance_column, skipping
-          # discriminate_class_for_record when it's absent. We intercept to
-          # force discrimination when tableoid is present.
-          # (5.x always calls instantiate → discriminate, so no override needed.)
-          def find_by_sql(sql, binds = [], preparable: nil, &block)
-            result_set = connection.select_all(sanitize_sql(sql), "#{name} Load", binds, preparable: preparable)
-
-            if mti? && result_set.columns.include?('tableoid')
-              force_mti_instantiation(result_set, &block)
-            else
-              column_types = result_set.column_types
-              column_types = column_types.reject { |k, _| attribute_types.key?(k) } unless column_types.empty?
-
-              message_bus = ActiveSupport::Notifications.instrumenter
-              payload = { record_count: result_set.length, class_name: name }
-
-              message_bus.instrument("instantiation.active_record", payload) do
-                if result_set.columns.include?(inheritance_column)
-                  result_set.map { |record| instantiate(record, column_types, &block) }
-                else
-                  result_set.map { |record| instantiate_instance_of(self, record, column_types, &block) }
-                end
-              end
-            end
-          end
-        end
-        # Rails 5.x: no override needed — find_by_sql always calls instantiate
-        # which calls discriminate_class_for_record.
-
       private
 
-        def force_mti_instantiation(result_set, &block)
-          column_types = result_set.column_types
-          column_types = column_types.reject { |k, _| attribute_types.key?(k) } unless column_types.empty?
-
-          ActiveSupport::Notifications.instrumenter.instrument(
-            "instantiation.active_record",
-            record_count: result_set.length, class_name: name
-          ) do
-            result_set.map { |record| instantiate(record, column_types, &block) }
+        # AR 6.0+ added a homogeneous fast path (instantiate_instance_of) that skips
+        # discrimination when the result set lacks the STI inheritance_column. MTI
+        # discriminates on `tableoid`, so intercept that fast path and re-route through
+        # `instantiate` (which calls discriminate_class_for_record). `klass == self`
+        # matches only AR's homogeneous call, so once `instantiate` has specialized the
+        # class, re-entry terminates — and an MTI branch with an STI leaf resolves via
+        # super. AR 5.x has no fast path (it always discriminates), so feature detection
+        # simply skips the hook there. One seam, every version, no reimplementation.
+        if ActiveRecord::Base.respond_to?(:instantiate_instance_of, true)
+          def instantiate_instance_of(klass, attributes, column_types = {}, &block)
+            if klass == self && mti? && (oid = attributes['tableoid']) &&
+               (real = ActiveRecord::MTI[oid]) && real != klass
+              return instantiate(attributes, column_types, &block)
+            end
+            super
           end
         end
 
