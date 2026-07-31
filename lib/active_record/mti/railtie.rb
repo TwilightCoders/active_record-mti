@@ -4,15 +4,33 @@ module ActiveRecord
       initializer 'active_record-mti.load' do |_app|
         ActiveSupport.on_load(:active_record) do
           require 'active_record/mti/core_extension'
-          require 'active_record/mti/connection_adapters/postgresql/schema_statements'
-          require 'active_record/mti/connection_adapters/postgresql/adapter'
           require 'active_record/mti/schema_dumper'
 
           ::ActiveRecord::Base.prepend(::ActiveRecord::MTI::CoreExtension)
-          ::ActiveRecord::ConnectionAdapters::PostgreSQLAdapter.prepend(ConnectionAdapters::PostgreSQL::Adapter)
-          ::ActiveRecord::ConnectionAdapters::PostgreSQLAdapter.prepend(ConnectionAdapters::PostgreSQL::SchemaStatements)
-          ::ActiveRecord::SchemaDumper.prepend(SchemaDumper)
+          ::ActiveRecord::SchemaDumper.prepend(::ActiveRecord::MTI::SchemaDumper)
+
+          # Rails 7.1+ lazy-loads connection adapters, so PostgreSQLAdapter may
+          # not be defined when :active_record loads (e.g. when another gem's
+          # railtie boots first). Prepend immediately if it's already present
+          # (AR <= 7.0); otherwise the adapter load hook below handles it.
+          if defined?(::ActiveRecord::ConnectionAdapters::PostgreSQLAdapter)
+            ::ActiveRecord::MTI::Railtie.patch_postgresql_adapter!(::ActiveRecord::ConnectionAdapters::PostgreSQLAdapter)
+          end
         end
+
+        # Fires when PostgreSQLAdapter loads on Rails 7.1+. Re-prepending the
+        # same module is a no-op, so this is safe even if both paths run.
+        ActiveSupport.on_load(:active_record_postgresqladapter) do
+          ::ActiveRecord::MTI::Railtie.patch_postgresql_adapter!(self)
+        end
+      end
+
+      def self.patch_postgresql_adapter!(adapter_class)
+        require 'active_record/mti/connection_adapters/postgresql/schema_statements'
+        require 'active_record/mti/connection_adapters/postgresql/adapter'
+
+        adapter_class.prepend(::ActiveRecord::MTI::ConnectionAdapters::PostgreSQL::Adapter)
+        adapter_class.prepend(::ActiveRecord::MTI::ConnectionAdapters::PostgreSQL::SchemaStatements)
       end
     end
   end
