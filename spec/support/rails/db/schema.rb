@@ -1,6 +1,11 @@
 ActiveRecord::Schema.define do
   enable_extension 'pgcrypto'
-  enable_extension 'uuid-ossp'
+  # NOT uuid-ossp: nothing in this schema or the specs ever called uuid_generate_v4 — the line
+  # was vestigial, and it hard-broke the whole suite the moment the dev box moved to PostgreSQL
+  # 18, whose Homebrew build doesn't ship that extension (pg_available_extensions lists pgcrypto
+  # and not uuid-ossp). One unused `enable_extension` took the suite from green to "0 examples"
+  # for five weeks, which is why an uncommitted railtie fix sat unverifiable in this repo.
+  # If a uuid default is ever wanted here, gen_random_uuid() is core Postgres since 13.
 
   self.verbose = false
 
