@@ -1,6 +1,10 @@
 ActiveRecord::Schema.define do
   enable_extension 'pgcrypto'
-  enable_extension 'uuid-ossp'
+  # NOT uuid-ossp: nothing in this schema or the specs ever called uuid_generate_v4, and
+  # PostgreSQL 18's Homebrew build doesn't ship that extension — so one unused line failed
+  # schema load and took the whole suite to "0 examples". Same fix as ba87fb2 on develop,
+  # applied here independently rather than cherry-picked: these branches have diverged and
+  # the railtie between them differs materially.
 
   self.verbose = false
 
