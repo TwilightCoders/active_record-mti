@@ -1,6 +1,47 @@
 # ActiveRecord::MTI
 
 ## 0.4.0 _(Unreleased)_
+- **`pluck` no longer returns `[value, tableoid]` tuples.**
+
+  `build_mti` projects `tableoid` onto every relation so MTI can discriminate a row's real
+  class. `pluck` asks for an explicit column list, returns raw values, needs no discrimination —
+  and faithfully returned whatever the relation projected, so every pluck on an MTI model
+  silently returned N+1 values per row:
+
+  ```ruby
+  Evidence.pluck(:evidence_type)        # => [["summarizes", 210031], ...]
+  Conversation.pluck(:provider)         # => [["claude_code", 113248], ...]
+  Evidence.pluck(:evidence_type, :note) # => [["summarizes", nil, 210031], ...]
+  # SELECT "evidence"."evidence_type", "evidence"."tableoid" FROM ONLY evidence
+  ```
+
+  Affected every column type — it was never uuid-specific — and was NOT avoided by
+  `from("ONLY …")` or by `pluck(Arel.sql(...))`; the projection is appended after the caller's
+  select list either way. The only safe forms were `map(&:attr)` and raw `select_values`.
+
+  It fails silently and plausibly, which is what makes it expensive rather than annoying:
+  `id == x` is simply false, `include?` simply misses, `uniq` simply doesn't dedupe, and nothing
+  raises. In one consuming app it produced a measurement reading "0 agreements, 37
+  disagreements" between two id sets that in truth agreed 33 times with zero disagreements — a
+  result that read as a real architectural problem. It caught four separate work streams there
+  in a single day, twice within one hour to someone who had already read a warning comment about
+  it. Documenting the trap had been tried, twice, and had failed both times; that is why the fix
+  belongs at the producer, where a caller cannot get it wrong.
+
+  It also silently corrupted LLM input in that app: a groomer built its extraction prompt from
+  `Entity.pluck(:name)`, joined into *"Known entities (use these names exactly when referring to
+  them)"*, which rendered as `overlanding technology company, 113295, Claude, 113295, Legal
+  Framework, 113295…` — every real name followed by the tableoid, instructing the model to treat
+  a table OID as an entity name. (No numerically-named entities were ever created, so the
+  visible damage was nil; the cost was noise in the instruction, which can't be measured after
+  the fact.)
+
+  Suppression is scoped to the duration of a `pluck` via `Thread.currently`, exactly as
+  `#perform_calculation` already scopes the tableoid CAST for calculations. The discrimination
+  mechanism is untouched: an ordinary relation still projects `tableoid`, a child row still
+  discriminates to its real class, and `tableoid` remains readable on a loaded record — all
+  three asserted in `spec/active_record/mti/pluck_spec.rb`, which also fails if the suppression
+  is removed.
 - Major overhaul to improve injection hiegine and performance
   - Refactored to improve inheritance detection at boot
   - Simplified a lot of the core inheritence logic
