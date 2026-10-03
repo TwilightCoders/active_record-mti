@@ -1,6 +1,9 @@
 # ActiveRecord::MTI
 
 ## 0.5.0 _(Unreleased)_
+- Patch `PostgreSQLAdapter` whenever it loads: via the `:active_record_postgresqladapter`
+  hook on Rails 7.1+, and by loading it with ActiveRecord on Rails < 7.1 (which has no
+  such hook), so MTI works regardless of gem load order
 - **Rails 8.0 / 8.1 compatibility** — read the discriminator from the read-only
   `ActiveRecord::Result::IndexedRow` (no `#delete`) that Rails 7.2+/8.x passes to
   `discriminate_class_for_record`, bounding the STI-leaf recursion with a

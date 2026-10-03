@@ -11,9 +11,11 @@ module ActiveRecord
 
           # Rails 7.1+ lazy-loads connection adapters, so PostgreSQLAdapter may
           # not be defined when :active_record loads (e.g. when another gem's
-          # railtie boots first). Prepend immediately if it's already present
-          # (AR <= 7.0); otherwise the adapter load hook below handles it.
-          if defined?(::ActiveRecord::ConnectionAdapters::PostgreSQLAdapter)
+          # railtie boots first). Prepend immediately if it's already present;
+          # otherwise the adapter load hook below handles it. That hook doesn't
+          # exist before 7.1, so there the adapter is loaded now.
+          if defined?(::ActiveRecord::ConnectionAdapters::PostgreSQLAdapter) || !::ActiveRecord::MTI::Railtie.adapter_load_hook?
+            require 'active_record/connection_adapters/postgresql_adapter'
             ::ActiveRecord::MTI::Railtie.patch_postgresql_adapter!(::ActiveRecord::ConnectionAdapters::PostgreSQLAdapter)
           end
         end
@@ -23,6 +25,11 @@ module ActiveRecord
         ActiveSupport.on_load(:active_record_postgresqladapter) do
           ::ActiveRecord::MTI::Railtie.patch_postgresql_adapter!(self)
         end
+      end
+
+      # ActiveRecord 7.1 added the :active_record_postgresqladapter load hook.
+      def self.adapter_load_hook?
+        ::ActiveRecord.version >= Gem::Version.new('7.1')
       end
 
       def self.patch_postgresql_adapter!(adapter_class)

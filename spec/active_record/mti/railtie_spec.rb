@@ -40,6 +40,14 @@ describe ActiveRecord::MTI::Railtie do
     end
   end
 
+  describe '.adapter_load_hook?' do
+    # Before 7.1 there is no :active_record_postgresqladapter hook, so the railtie must load and
+    # patch the adapter itself; an app that connects later would otherwise never be patched.
+    it 'is true exactly when ActiveRecord runs the adapter load hook (7.1+)' do
+      expect(described_class.adapter_load_hook?).to eq(ActiveRecord.version >= Gem::Version.new('7.1'))
+    end
+  end
+
   describe 'the lazy-load path' do
     # THE REGRESSION THIS FILE EXISTS FOR. Running the load hook is exactly what Rails does when
     # the adapter is required later (activerecord .../postgresql_adapter.rb runs
