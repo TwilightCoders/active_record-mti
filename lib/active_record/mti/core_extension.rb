@@ -34,7 +34,6 @@ module ActiveRecord
         def reset_mti_information
           ActiveRecord::MTI[mti_table.oid] = nil if mti?
           @mti_table = nil
-          @columns_hash&.delete("tableoid") unless @columns_hash&.frozen?
         end
 
         def reset_column_information
@@ -58,16 +57,14 @@ module ActiveRecord
           @mti_table = value
           return unless mti_table
 
+          # A virtual attribute, never a column: tableoid is a system column that can be read
+          # but not written, and every column is written once partial inserts are off.
           attribute :tableoid, ActiveRecord::MTI.oid_class.new
           ActiveRecord::MTI[mti_table.oid] = self
         end
 
         def table_name=(value)
           super.tap { reset_mti_table if connected? }
-        end
-
-        def load_schema!
-          super.tap { add_tableoid_column if mti? }
         end
 
         def reset_mti_table
@@ -129,23 +126,6 @@ module ActiveRecord
           end
         end
 
-      protected
-
-        def add_tableoid_column
-          return if columns_hash.key?("tableoid")
-
-          col = build_tableoid_column
-          return unless col
-
-          if columns_hash.frozen?
-            @columns_hash = columns_hash.merge("tableoid" => col).freeze
-          else
-            columns_hash["tableoid"] = col
-          end
-        end
-
-      private
-
         def register_mti_class_for_oid(oid)
           child = ::ActiveRecord::MTI.child_tables.detect { |t| t.oid.to_s == oid.to_s }
           return unless child
@@ -156,32 +136,6 @@ module ActiveRecord
 
           # Resolving table_name above may itself have registered the class; don't fight it.
           ::ActiveRecord::MTI[oid] || (::ActiveRecord::MTI[oid] = klass)
-        end
-
-        def build_tableoid_column
-          field = synthesize_tableoid_field
-          arity = connection.method(:new_column_from_field).arity
-
-          if arity == 3 || arity <= -3
-            definitions = connection.send(:column_definitions, table_name)
-            connection.send(:new_column_from_field, table_name, field, definitions)
-          else
-            connection.send(:new_column_from_field, table_name, field)
-          end
-        rescue ActiveRecord::StatementInvalid, ArgumentError => e
-          Rails.logger.warn("[active_record-mti] Failed to build tableoid column: #{e.message}") if defined?(Rails.logger) && Rails.logger
-          nil
-        end
-
-        def synthesize_tableoid_field
-          base = ['tableoid', 'oid', nil, false, 26, -1]
-          if ActiveRecord.version >= Gem::Version.new('8.0')
-            base + [nil, nil, nil, nil]
-          elsif ActiveRecord.version >= Gem::Version.new('7.0')
-            base + [nil, nil, nil]
-          else
-            base + [nil, nil]
-          end
         end
 
       end

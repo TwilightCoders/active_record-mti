@@ -1,6 +1,9 @@
 # ActiveRecord::MTI
 
 ## 0.5.0 _(Unreleased)_
+- **`tableoid` is a virtual attribute again, never a table column.** Listing it among the
+  columns put it into every INSERT once partial inserts are off (the Rails 7+ default), and
+  PostgreSQL refuses to write a system column (`PG::UndefinedColumn`).
 - **Loading a schema with `create_table inherits:` no longer fails with `PG::DuplicateTable`.** A
   dumped schema declares the child's copy of each inherited index inside the child's
   `create_table`, and the inherited copy was then created again. An index the child already has

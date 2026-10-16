@@ -25,12 +25,37 @@ describe ActiveRecord::MTI::CoreExtension do
   end
 
   describe 'model' do
-    it "shows tableoid column" do
-      expect(User.column_names).to include("tableoid")
-    end
-
     it "exposes tableoid as an attribute" do
       expect(User.attribute_names).to include("tableoid")
+    end
+
+    # tableoid is a system column: it can be read but never written. A column in
+    # columns_hash is written by every INSERT once partial inserts are off (the Rails 7+
+    # default), so it must stay a virtual attribute.
+    it "does not list tableoid among the table's columns" do
+      expect(User.column_names).not_to include("tableoid")
+    end
+
+    context "with partial inserts off" do
+      flag = ActiveRecord::Base.respond_to?(:partial_inserts) ? :partial_inserts : :partial_writes
+
+      around do |example|
+        previous = ActiveRecord::Base.public_send(flag)
+        ActiveRecord::Base.public_send(:"#{flag}=", false)
+        example.run
+      ensure
+        ActiveRecord::Base.public_send(:"#{flag}=", previous)
+      end
+
+      it "creates a record without writing tableoid" do
+        user = User.create!(email: 'partial@example.com')
+        expect(User.find(user.id).email).to eq('partial@example.com')
+      end
+
+      it "finds or creates a record without writing tableoid" do
+        user = User.find_or_create_by!(email: 'found@example.com')
+        expect(User.find_or_create_by!(email: 'found@example.com').id).to eq(user.id)
+      end
     end
   end
 
