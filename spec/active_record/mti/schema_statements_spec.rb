@@ -48,4 +48,36 @@ describe ActiveRecord::MTI::ConnectionAdapters::PostgreSQL::SchemaStatements do
       end
     end
   end
+
+  describe '#inherit_indexes' do
+    after do
+      connection.execute('DROP TABLE IF EXISTS "inh_child", "inh_parent"')
+    end
+
+    it 'skips a parent index the child already declares, as a schema load does' do
+      connection.create_table :inh_parent do |t|
+        t.datetime :deleted_at
+      end
+      connection.add_index :inh_parent, :deleted_at, name: 'idx_inh_parent_deleted'
+
+      expect {
+        connection.create_table :inh_child, inherits: :inh_parent do |t|
+          t.index :deleted_at, name: 'idx_inh_child_deleted'
+        end
+      }.not_to raise_error
+
+      expect(connection.indexes(:inh_child).map(&:name)).to eq(['idx_inh_child_deleted'])
+    end
+
+    it 'still copies a parent index the child does not declare' do
+      connection.create_table :inh_parent do |t|
+        t.datetime :deleted_at
+      end
+      connection.add_index :inh_parent, :deleted_at, name: 'idx_inh_parent_deleted'
+
+      connection.create_table :inh_child, inherits: :inh_parent
+
+      expect(connection.indexes(:inh_child).map(&:name)).to eq(['idx_inh_child_deleted'])
+    end
+  end
 end

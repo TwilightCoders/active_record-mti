@@ -1,6 +1,10 @@
 # ActiveRecord::MTI
 
 ## 0.5.0 _(Unreleased)_
+- **Loading a schema with `create_table inherits:` no longer fails with `PG::DuplicateTable`.** A
+  dumped schema declares the child's copy of each inherited index inside the child's
+  `create_table`, and the inherited copy was then created again. An index the child already has
+  under that name is now left alone.
 - **`pluck` no longer returns `[value, tableoid]` tuples.**
 
   `build_mti` projects `tableoid` onto every relation so MTI can discriminate a row's real

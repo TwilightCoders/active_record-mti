@@ -63,6 +63,12 @@ module ActiveRecord
                 attrs[:name] = idx_name
               end
 
+              # A schema load declares the child's copy too (`t.index` inside the same
+              # create_table, which runs first), so an index of that name is already the
+              # inherited one, and creating it again would abort the load with
+              # PG::DuplicateTable.
+              next if attrs[:name] && index_name_exists?(table_name, attrs[:name])
+
               add_index table_name, index.columns, **attrs
             end
           end
