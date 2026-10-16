@@ -51,6 +51,16 @@ module ActiveRecord
         end
       end
 
+      # Same trap, same fix. Rails 7.1+ implements #ids with its own select_all over the
+      # relation's arel rather than delegating to #pluck, so the tableoid projection leaked
+      # into it too: `User.ids # => [[1, 32779], [2, 32791]]`. On older Rails #ids calls
+      # #pluck and the nested suppression is harmless.
+      def ids
+        ThreadContext.with(:skip_tableoid_projection, true) do
+          super
+        end
+      end
+
       def projecting_tableoid?(arel)
         arel.projections.any? do |projection|
           tableoid_projection?(projection)

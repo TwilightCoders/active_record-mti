@@ -64,6 +64,22 @@ describe 'pluck on an MTI model' do
 
   # THE OTHER HALF: suppression is scoped to pluck and must not disturb the mechanism it
   # borrows from. If these fail, the fix went too far.
+  # Rails 7.1+ builds #ids from the relation's arel directly instead of via #pluck, so it
+  # needs the same suppression.
+  describe '#ids' do
+    it 'returns scalar ids, not [id, tableoid] pairs' do
+      ids = User.ids
+
+      expect(ids).to all(be_a(Integer))
+      expect(ids).to match_array(User.all.map(&:id))
+    end
+
+    it 'holds on a child table and on a filtered relation' do
+      expect(Admin.ids).to all(be_a(Integer))
+      expect(User.where(email: 'admin@example.com').ids).to eq(Admin.ids)
+    end
+  end
+
   describe 'the discrimination mechanism is untouched' do
     it 'still projects tableoid on an ordinary relation' do
       expect(User.all.to_sql).to include('tableoid')

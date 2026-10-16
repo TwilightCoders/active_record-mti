@@ -42,6 +42,8 @@
   discriminates to its real class, and `tableoid` remains readable on a loaded record — all
   three asserted in `spec/active_record/mti/pluck_spec.rb`, which also fails if the suppression
   is removed.
+- **`ids` no longer returns `[id, tableoid]` tuples** on Rails 7.1+, where `ids` builds its own
+  query from the relation's arel instead of calling `pluck`; it gets the same scoped suppression
 - Integrated the `datalayer` line (Rails 8.1 overhaul) into `develop`; where both lines
   fixed the same defect, the cross-version implementation from `develop` is kept
 - Prepend `MTI::Relation` once onto `ActiveRecord::Relation` instead of into each model's
