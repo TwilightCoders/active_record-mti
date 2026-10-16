@@ -42,7 +42,12 @@ module ActiveRecord
         end
 
         def tableoid?
-          !ThreadContext.active?(:skip_tableoid_cast) && mti?
+          # Evaluate mti? first: resolving mti_table registers this class in the oid->class
+          # map used for discrimination. Gating it behind the transient skip_tableoid_cast flag
+          # (set during calculations) would leave a class first touched inside a count/sum
+          # unregistered, breaking later parent->child discrimination in an order-dependent
+          # way. The boolean result is unchanged.
+          mti? && !ThreadContext.active?(:skip_tableoid_cast)
         end
 
         def tableoid
@@ -55,7 +60,6 @@ module ActiveRecord
 
           attribute :tableoid, ActiveRecord::MTI.oid_class.new
           ActiveRecord::MTI[mti_table.oid] = self
-          prepend_mti_relation
         end
 
         def table_name=(value)
@@ -88,11 +92,21 @@ module ActiveRecord
           # Both the mutable Hash (Rails <= 7.1) and the read-only IndexedRow (7.2+) support
           # #[], so read the oid uniformly. The `mti_class != self` guard terminates the
           # recursion and hands an MTI branch with an STI leaf to super (STI via the type column).
-          if (oid = record['tableoid']) && (mti_class = ::ActiveRecord::MTI[oid]) && mti_class != self
+          if (mti_class = mti_class_for_oid(record['tableoid'])) && mti_class != self
             mti_class.discriminate_class_for_record(record)
           else
             super
           end
+        end
+
+        # The class a row's tableoid belongs to. The oid->class registry fills lazily (a class
+        # registers when it first resolves its mti_table), so a parent query can meet a row whose
+        # subclass hasn't registered yet. On a miss, resolve the oid through the catalog to its
+        # loaded class — preferring the class that owns the table (its STI base) over an STI
+        # leaf sharing it — and cache it, so discrimination doesn't depend on load order.
+        def mti_class_for_oid(oid)
+          return unless oid
+          ::ActiveRecord::MTI[oid] || register_mti_class_for_oid(oid)
         end
 
       private
@@ -107,8 +121,8 @@ module ActiveRecord
         # simply skips the hook there. One seam, every version, no reimplementation.
         if ActiveRecord::Base.respond_to?(:instantiate_instance_of, true)
           def instantiate_instance_of(klass, attributes, column_types = {}, &block)
-            if klass == self && mti? && (oid = attributes['tableoid']) &&
-               (real = ActiveRecord::MTI[oid]) && real != klass
+            if klass == self && mti? && (real = mti_class_for_oid(attributes['tableoid'])) &&
+               real != klass
               return instantiate(attributes, column_types, &block)
             end
             super
@@ -132,10 +146,16 @@ module ActiveRecord
 
       private
 
-        def prepend_mti_relation
-          if defined?(@relation_delegate_cache) && @relation_delegate_cache
-            @relation_delegate_cache.each_value { |delegate| delegate.prepend(::ActiveRecord::MTI::Relation) }
-          end
+        def register_mti_class_for_oid(oid)
+          child = ::ActiveRecord::MTI.child_tables.detect { |t| t.oid.to_s == oid.to_s }
+          return unless child
+
+          owning = descendants.select { |d| d.table_name == child.name }
+          klass = owning.find { |d| d.superclass.table_name != child.name } || owning.first
+          return unless klass
+
+          # Resolving table_name above may itself have registered the class; don't fight it.
+          ::ActiveRecord::MTI[oid] || (::ActiveRecord::MTI[oid] = klass)
         end
 
         def build_tableoid_column

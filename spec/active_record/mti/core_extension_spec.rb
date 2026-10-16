@@ -28,6 +28,10 @@ describe ActiveRecord::MTI::CoreExtension do
     it "shows tableoid column" do
       expect(User.column_names).to include("tableoid")
     end
+
+    it "exposes tableoid as an attribute" do
+      expect(User.attribute_names).to include("tableoid")
+    end
   end
 
   describe '#table_name=' do
@@ -42,6 +46,37 @@ describe ActiveRecord::MTI::CoreExtension do
       User.table_name = "foobar/users"
       User.table_name = "users"
       expect(User.mti?).to eq(true)
+    end
+  end
+
+  # The oid->class registry fills lazily, so a parent query can meet a child row whose class
+  # has not registered yet. Discrimination must not depend on that order.
+  describe "discrimination with an unregistered child oid" do
+    def unregister(klass)
+      oid = klass.mti_table.oid
+      ActiveRecord::MTI[oid] = nil
+      yield oid
+    ensure
+      ActiveRecord::MTI[oid] = nil
+      ActiveRecord::MTI[oid] = klass
+    end
+
+    it "resolves the row to its class through the catalog and re-registers it" do
+      Admin.create!(email: 'heal@example.com', god_powers: 1)
+
+      unregister(Admin) do |oid|
+        expect(User.where(email: 'heal@example.com').first).to be_a(Admin)
+        expect(ActiveRecord::MTI[oid]).to eq(Admin)
+      end
+    end
+
+    it "prefers the class that owns the table over an STI leaf sharing it" do
+      Transportation::Truck.create!(color: 'red')
+
+      unregister(Transportation::Truck) do |oid|
+        expect(Transportation::Vehicle.where(color: 'red').first).to be_an_instance_of(Transportation::Truck)
+        expect(ActiveRecord::MTI[oid]).to eq(Transportation::Truck)
+      end
     end
   end
 

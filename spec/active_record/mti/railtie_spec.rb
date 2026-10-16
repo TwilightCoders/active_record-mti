@@ -82,5 +82,9 @@ describe ActiveRecord::MTI::Railtie do
       expect(ActiveRecord::SchemaDumper.ancestors).to include(ActiveRecord::MTI::SchemaDumper)
       expect(ActiveRecord::Base.ancestors).to include(ActiveRecord::MTI::CoreExtension)
     end
+
+    it 'prepends the relation behaviour onto ActiveRecord::Relation itself, not per model' do
+      expect(ActiveRecord::Relation.ancestors).to include(ActiveRecord::MTI::Relation)
+    end
   end
 end

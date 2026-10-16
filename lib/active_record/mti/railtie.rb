@@ -9,6 +9,13 @@ module ActiveRecord
           ::ActiveRecord::Base.prepend(::ActiveRecord::MTI::CoreExtension)
           ::ActiveRecord::SchemaDumper.prepend(::ActiveRecord::MTI::SchemaDumper)
 
+          # Prepend the MTI relation behaviour once, globally. build_mti is a no-op unless the
+          # relation's klass is MTI (klass.tableoid?), so this is safe for every model, and it
+          # avoids the order-dependent fragility of prepending into each class's
+          # relation_delegate_cache (a relation built before its class resolved mti_table would
+          # silently drop the tableoid projection and with it discrimination).
+          ::ActiveRecord::Relation.prepend(::ActiveRecord::MTI::Relation)
+
           # Rails 7.1+ lazy-loads connection adapters, so PostgreSQLAdapter may
           # not be defined when :active_record loads (e.g. when another gem's
           # railtie boots first). Prepend immediately if it's already present;
